@@ -1,7 +1,10 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 
+import { loadLocalEnv } from "./load-env.js";
 import { GET as generate } from "../api/generate.js";
 import { GET as health } from "../api/health.js";
+
+loadLocalEnv();
 
 const PORT = Number.parseInt(process.env.PORT || "3000", 10);
 
