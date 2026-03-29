@@ -79,6 +79,7 @@ export interface QueueBatchResult {
 }
 
 export interface GenerateQueueResult {
+  runId: string;
   generatedAt: string;
   config: PublicConfig;
   totals: {
