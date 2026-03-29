@@ -20,7 +20,7 @@
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
     "drizzle-orm": "^0.45.2",
-    "jsdom": "^29.0.1",
+    "jsdom": "^26.1.0",
     "postgres": "^3.4.8"
   },
   "devDependencies": {
