@@ -158,6 +158,10 @@ Supported query parameters:
    - Any optional variables you want to tune
 4. Deploy.
 
+GitHub Actions also needs a production database secret to run migrations on pushes to `main`:
+
+- `PRODUCTION_DATABASE_URL`: production Neon/Vercel Postgres connection string used by `.github/workflows/migrate.yml`.
+
 Vercel function settings are defined in `vercel.json`. The project currently requests:
 
 - `maxDuration: 60`
@@ -169,6 +173,12 @@ Deployment smoke checks:
 curl https://your-project.vercel.app/api/health
 curl 'https://your-project.vercel.app/api/generate?maxArticles=5'
 ```
+
+Schema changes:
+
+- Commit generated Drizzle migrations under `drizzle/`.
+- Push to `main` to run the production migration workflow.
+- The migration workflow is separate from Vercel deploys, so there is still a small race window unless deploy promotion is gated outside Vercel.
 
 ## 💬 Response shape
 
