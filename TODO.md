@@ -3,7 +3,7 @@
 ## Product and Workflow
 
 * [ ] Mark processed articles as read in Raindrop. Define when an item becomes "processed" and make the update idempotent so retries do not corrupt state.
-* [ ] Cache extracted content (e.g. `/queue/latest`). Decide whether this lives in Vercel KV, Blob, or another store, and define cache invalidation and freshness rules.
+* [ ] Add persisted latest-queue retrieval endpoints (e.g. `/queue/latest` and batch-specific HTML output). Serve the latest successful stored run without re-running extraction, and define cache invalidation and freshness rules.
 * [ ] Tag-based filtering (e.g. only `tts`). Support either a default configured Raindrop search/tag filter or per-request filtering with validation.
 * [ ] Generate AI summaries per article (e.g. before each article `Summary: ...`). Keep summaries optional, bounded in length, and isolated from the core extraction flow so queue generation still works without the model step.
 * [ ] Auto daily generation (cron). Define the schedule, destination of the generated output, and retry behavior when upstream extraction fails.
@@ -25,6 +25,7 @@
 
 * [ ] Add persistent storage for generated queues and run history. Keep enough metadata to inspect previous runs, compare outputs, and support retrieval without re-fetching everything.
 * [ ] Add background or asynchronous generation for larger queues. Move long-running work off the synchronous request path when cache misses or large collections make single-request generation unreliable.
+* [ ] Define the async run lifecycle and API contract. Add run statuses (`queued`, `running`, `succeeded`, `failed`), polling/retrieval endpoints, idempotency rules, and failure/retry handling.
 * [ ] Add observability and alerting. Capture structured logs, extraction failure rates, upstream timeout rates, and deployment/runtime errors.
 * [ ] Add deployment smoke checks and runbooks. Document what to verify after each Vercel deploy and what to do when Raindrop auth, extraction, or quota failures start happening.
 * [ ] Add integration tests that cover real route behavior with mocked upstreams. Verify error mapping, timeout handling, skipped-article behavior, and HTML rendering from the API surface, not just helpers.
