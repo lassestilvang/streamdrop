@@ -39,7 +39,7 @@ export function resolveConfig(requestUrl: string, env: NodeJS.ProcessEnv = proce
 
   const token = readRequiredString(env.RAINDROP_TOKEN, "RAINDROP_TOKEN");
 
-  const config: AppConfig = {
+  return finalizeConfig({
     token,
     collectionId: readInteger(
       url.searchParams.get("collectionId"),
@@ -94,12 +94,21 @@ export function resolveConfig(requestUrl: string, env: NodeJS.ProcessEnv = proce
     ),
     maxWords: 0,
     perPage: 0,
-  };
+  });
+}
 
-  config.maxWords = config.maxMinutes * config.wordsPerMinute;
-  config.perPage = Math.min(config.maxArticles, 50);
+export function restoreConfig(
+  publicConfig: PublicConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): AppConfig {
+  const token = readRequiredString(env.RAINDROP_TOKEN, "RAINDROP_TOKEN");
 
-  return config;
+  return finalizeConfig({
+    token,
+    ...publicConfig,
+    maxWords: 0,
+    perPage: 0,
+  });
 }
 
 export function getPublicConfig(config: AppConfig): PublicConfig {
@@ -115,6 +124,13 @@ export function getPublicConfig(config: AppConfig): PublicConfig {
     fetchTimeoutMs: config.fetchTimeoutMs,
     maxHtmlBytes: config.maxHtmlBytes,
   };
+}
+
+function finalizeConfig(config: AppConfig): AppConfig {
+  config.maxWords = config.maxMinutes * config.wordsPerMinute;
+  config.perPage = Math.min(config.maxArticles, 50);
+
+  return config;
 }
 
 function readRequiredString(value: string | undefined, name: string): string {
