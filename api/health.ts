@@ -4,11 +4,12 @@ import { json, methodNotAllowed } from "./_lib/http.js";
 export function GET(request: Request): Response {
   let configuration:
     | {
-        ok: true;
-        collectionId: number;
-        maxArticles: number;
-        maxMinutes: number;
-        extractionConcurrency: number;
+      ok: true;
+      collectionId: number;
+      databaseConfigured: boolean;
+      maxArticles: number;
+      maxMinutes: number;
+      extractionConcurrency: number;
       }
     | {
         ok: false;
@@ -21,6 +22,7 @@ export function GET(request: Request): Response {
     configuration = {
       ok: true,
       collectionId: config.collectionId,
+      databaseConfigured: Boolean(process.env.DATABASE_URL),
       maxArticles: config.maxArticles,
       maxMinutes: config.maxMinutes,
       extractionConcurrency: config.extractionConcurrency,
