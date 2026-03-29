@@ -27,6 +27,6 @@
 * [ ] Add background or asynchronous generation for larger queues. Move long-running work off the synchronous request path when cache misses or large collections make single-request generation unreliable.
 * [ ] Define the async run lifecycle and API contract. Add run statuses (`queued`, `running`, `succeeded`, `failed`), polling/retrieval endpoints, idempotency rules, and failure/retry handling.
 * [ ] Add observability and alerting. Capture structured logs, extraction failure rates, upstream timeout rates, and deployment/runtime errors.
-* [ ] Add a production-safe migration workflow. Ensure Drizzle migrations are applied to the target database on deploy or via a deliberate release step before runtime code depends on new tables.
+* [x] Add a production-safe migration workflow. GitHub Actions now runs `npm run db:migrate` on pushes to `main` using the `PRODUCTION_DATABASE_URL` secret.
 * [ ] Add deployment smoke checks and runbooks. Document what to verify after each Vercel deploy and what to do when Raindrop auth, extraction, or quota failures start happening.
 * [ ] Add integration tests that cover real route behavior with mocked upstreams. Verify error mapping, timeout handling, skipped-article behavior, and HTML rendering from the API surface, not just helpers.
