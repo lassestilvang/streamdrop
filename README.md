@@ -57,11 +57,13 @@ Database modules:
 
 Routes:
 
+- `index.html`: authenticated dashboard for queue control and inspection.
+- `api/session.js`: single-user login/session management.
 - `api/generate.js`: main queue-generation endpoint.
 - `api/health.js`: health/configuration check for deployments.
 - `api/queue/latest/index.js`: latest stored successful queue for a configuration.
 - `api/queue/latest/html.js`: stored HTML for a latest queue batch.
-- `api/runs/index.js`: create queued runs for async processing.
+- `api/runs/index.js`: list recent runs or create queued runs for async processing.
 - `api/runs/[runId]/index.js`: inspect persisted run state.
 - `api/runs/[runId]/process.js`: process a queued run.
 - `api/runs/[runId]/html.js`: retrieve stored HTML for a specific run batch.
@@ -90,10 +92,15 @@ npm run dev
 
 Available endpoints:
 
+- `GET /`
 - `GET /api/health`
+- `GET /api/session`
+- `POST /api/session`
+- `DELETE /api/session`
 - `GET /api/generate`
 - `GET /api/queue/latest`
 - `GET /api/queue/latest/html?batch=1`
+- `GET /api/runs?limit=12`
 - `POST /api/runs`
 - `GET /api/runs/:runId`
 - `POST /api/runs/:runId/process`
@@ -132,6 +139,9 @@ Required:
 
 Optional:
 
+- `APP_USERNAME`: single-user dashboard username. Default `streamdrop`.
+- `APP_PASSWORD`: single-user dashboard password. Default `streamdrop`.
+- `SESSION_SECRET`: cookie-signing secret for the web UI session.
 - `RAINDROP_COLLECTION_ID`: collection to read from. Default `0` for all collections except trash.
 - `RAINDROP_SEARCH`: Raindrop search filter.
 - `MAX_MINUTES`: target duration per output batch. Default `45`.
@@ -159,6 +169,22 @@ Supported query parameters:
 - `concurrency`
 - `timeoutMs`
 - `maxHtmlBytes`
+
+## 🖥️ Web UI
+
+Open `/` to use the dashboard. It adds:
+
+- Single-user authentication backed by a signed session cookie.
+- Queue generation from the browser using the existing queued-run lifecycle.
+- Stored latest-queue retrieval for the current configuration.
+- Batch preview, copy-to-clipboard, and direct HTML opening.
+- Skipped-article inspection.
+- Recent run history and operator stats such as extraction rate, success streak, and skip pressure.
+
+If you do not override the auth settings, the default login is:
+
+- Username: `streamdrop`
+- Password: `streamdrop`
 
 ## ☁️ Deployment on Vercel
 
@@ -215,6 +241,7 @@ Retrieval:
 
 - `GET /api/queue/latest` returns the latest successful stored run for the requested configuration.
 - `GET /api/queue/latest/html?batch=1` returns stored HTML for a batch from that latest run.
+- `GET /api/runs?limit=12` returns recent persisted run summaries for dashboard/history views.
 - `GET /api/runs/:runId` returns the persisted lifecycle state for a specific run.
 - `GET /api/runs/:runId/html?batch=1` returns stored HTML for a specific successful run.
 
@@ -235,3 +262,4 @@ Current limitation:
 - Whole-run failures are persisted to Postgres with status and structured error details.
 - Successful runs are persisted to Postgres with per-batch, per-article, and skip metadata for later retrieval.
 - `/api/health` reports whether configuration is valid without exposing secrets.
+- Queue, run, and health endpoints require the single-user session gate exposed by `/api/session`.
