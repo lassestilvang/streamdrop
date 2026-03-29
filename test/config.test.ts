@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getPublicConfig, resolveConfig } from "../api/_lib/config.js";
+import { getPublicConfig, resolveConfig, restoreConfig } from "../api/_lib/config.js";
 
 test("resolveConfig requires the raindrop token", () => {
   assert.throws(
@@ -54,4 +54,32 @@ test("resolveConfig rejects unsupported sort values", () => {
       }),
     /Unsupported sort value/,
   );
+});
+
+test("restoreConfig rebuilds derived fields from a stored public config", () => {
+  const config = restoreConfig(
+    {
+      collectionId: 42,
+      search: "tag:tts",
+      sort: "title",
+      nested: false,
+      maxArticles: 12,
+      maxMinutes: 60,
+      wordsPerMinute: 200,
+      extractionConcurrency: 3,
+      fetchTimeoutMs: 9000,
+      maxHtmlBytes: 500000,
+    },
+    {
+      RAINDROP_TOKEN: "token",
+    },
+  );
+
+  assert.equal(config.token, "token");
+  assert.equal(config.maxWords, 12000);
+  assert.equal(config.perPage, 12);
+  assert.equal(config.collectionId, 42);
+  assert.equal(config.search, "tag:tts");
+  assert.equal(config.sort, "title");
+  assert.equal(config.nested, false);
 });
