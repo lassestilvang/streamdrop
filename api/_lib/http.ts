@@ -11,6 +11,17 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
   });
 }
 
+export function html(document: string, init: ResponseInit = {}): Response {
+  const headers = new Headers(init.headers);
+  headers.set("content-type", "text/html; charset=utf-8");
+  headers.set("cache-control", "no-store");
+
+  return new Response(document, {
+    ...init,
+    headers,
+  });
+}
+
 export function methodNotAllowed(allowedMethods: string[]): Response {
   return json(
     {
@@ -48,7 +59,7 @@ export function toErrorResponse(error: unknown): Response {
     {
       error: {
         code: "INTERNAL_ERROR",
-        message: "Unexpected error while generating the queue.",
+        message: "Unexpected error while handling the request.",
       },
     },
     { status: 500 },
