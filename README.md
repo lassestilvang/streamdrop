@@ -16,8 +16,6 @@ Streamdrop flips that:
 * ✅ Fully self-hosted (Vercel-friendly)
 * ✅ Clean article extraction
 
----
-
 ## 🚀 How It Works
 
 ```
@@ -30,8 +28,6 @@ Raindrop → Fetch → Extract → Clean → Batch → HTML → ElevenReader
 4. Batch into ~30–60 min chunks
 5. Generate a structured HTML document
 6. Paste into ElevenReader → listen 🎧
-
----
 
 ## 📦 Features
 
