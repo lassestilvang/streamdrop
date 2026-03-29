@@ -1,5 +1,8 @@
+import { randomUUID } from "node:crypto";
+
 import { getPublicConfig } from "./config.js";
 import { extractArticles } from "./extract.js";
+import { persistQueueRun } from "./persistence.js";
 import { createBatches, renderBatchHtml } from "./queue.js";
 import { fetchRaindrops } from "./raindrop.js";
 import type { AppConfig, GenerateQueueResult } from "./types.js";
@@ -7,16 +10,19 @@ import type { AppConfig, GenerateQueueResult } from "./types.js";
 export async function generateQueue(config: AppConfig): Promise<GenerateQueueResult> {
   const raindrops = await fetchRaindrops(config);
   const { extracted, skipped } = await extractArticles(raindrops, config);
+  const publicConfig = getPublicConfig(config);
+  const runId = randomUUID();
+  const generatedAt = new Date().toISOString();
   const batches = createBatches(extracted, config.maxWords, config.wordsPerMinute).map((batch) => ({
     ...batch,
     html: renderBatchHtml(batch),
   }));
 
   const totalWords = extracted.reduce((total, article) => total + article.wordCount, 0);
-
-  return {
-    generatedAt: new Date().toISOString(),
-    config: getPublicConfig(config),
+  const result: GenerateQueueResult = {
+    runId,
+    generatedAt,
+    config: publicConfig,
     totals: {
       fetched: raindrops.length,
       extracted: extracted.length,
@@ -40,4 +46,16 @@ export async function generateQueue(config: AppConfig): Promise<GenerateQueueRes
     })),
     skipped,
   };
+
+  await persistQueueRun({
+    runId,
+    generatedAt,
+    config: publicConfig,
+    fetchedItems: raindrops,
+    batches,
+    skipped,
+    result,
+  });
+
+  return result;
 }
