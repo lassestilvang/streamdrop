@@ -3,7 +3,7 @@
 ## Product and Workflow
 
 * [ ] Mark processed articles as read in Raindrop. Define when an item becomes "processed" and make the update idempotent so retries do not corrupt state.
-* [ ] Add persisted latest-queue retrieval endpoints (e.g. `/queue/latest` and batch-specific HTML output). Serve the latest successful stored run without re-running extraction, and define cache invalidation and freshness rules.
+* [x] Add persisted latest-queue retrieval endpoints (e.g. `/queue/latest` and batch-specific HTML output). Latest stored queue JSON and batch HTML can now be served directly from Postgres without re-running extraction.
 * [ ] Tag-based filtering (e.g. only `tts`). Support either a default configured Raindrop search/tag filter or per-request filtering with validation.
 * [ ] Generate AI summaries per article (e.g. before each article `Summary: ...`). Keep summaries optional, bounded in length, and isolated from the core extraction flow so queue generation still works without the model step.
 * [ ] Auto daily generation (cron). Define the schedule, destination of the generated output, and retry behavior when upstream extraction fails.
@@ -24,8 +24,8 @@
 ## Reliability and Operations
 
 * [x] Add persistent storage for generated queues and run history. Successful queue generations are now persisted in Postgres with run, batch, article, and skip records so previous outputs can be inspected and reused without re-fetching upstream content.
-* [ ] Add background or asynchronous generation for larger queues. Move long-running work off the synchronous request path when cache misses or large collections make single-request generation unreliable.
-* [ ] Define the async run lifecycle and API contract. Add run statuses (`queued`, `running`, `succeeded`, `failed`), polling/retrieval endpoints, idempotency rules, and failure/retry handling.
+* [ ] Add automatic background generation for larger queues. The run lifecycle and queue/process endpoints now exist, but queued runs still need an explicit processor call instead of a dedicated worker or scheduled drain.
+* [x] Define the async run lifecycle and API contract. Runs now persist `queued`, `running`, `succeeded`, and `failed` states with polling and retrieval endpoints, plus structured failure records for retry/debugging.
 * [ ] Add observability and alerting. Capture structured logs, extraction failure rates, upstream timeout rates, and deployment/runtime errors.
 * [x] Add a production-safe migration workflow. GitHub Actions now runs `npm run db:migrate` on pushes to `main` using the `PRODUCTION_DATABASE_URL` secret.
 * [ ] Add deployment smoke checks and runbooks. Document what to verify after each Vercel deploy and what to do when Raindrop auth, extraction, or quota failures start happening.
