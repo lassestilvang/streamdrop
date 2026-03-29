@@ -1,4 +1,5 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
+import { readFile } from "node:fs/promises";
 
 import { loadLocalEnv } from "./load-env.js";
 import { GET as generate } from "../api/generate.js";
@@ -9,14 +10,18 @@ import runsHandler from "../api/runs/index.js";
 import runHandler from "../api/runs/[runId]/index.js";
 import runHtmlHandler from "../api/runs/[runId]/html.js";
 import runProcessHandler from "../api/runs/[runId]/process.js";
+import sessionHandler from "../api/session.js";
 
 loadLocalEnv();
 
 const PORT = Number.parseInt(process.env.PORT || "3000", 10);
+const INDEX_HTML_URL = new URL("../index.html", import.meta.url);
+const APP_CSS_URL = new URL("../web/app.css", import.meta.url);
+const APP_JS_URL = new URL("../web/app.js", import.meta.url);
 
 const server = http.createServer(async (req, res) => {
   try {
-    const request = toWebRequest(req);
+    const request = await toWebRequest(req);
     const response = await routeRequest(request);
     await sendResponse(res, response);
   } catch (error) {
@@ -48,12 +53,28 @@ server.listen(PORT, () => {
 async function routeRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
+  if (url.pathname === "/" || url.pathname === "/index.html") {
+    return serveStaticFile(INDEX_HTML_URL, "text/html; charset=utf-8");
+  }
+
+  if (url.pathname === "/web/app.css") {
+    return serveStaticFile(APP_CSS_URL, "text/css; charset=utf-8");
+  }
+
+  if (url.pathname === "/web/app.js") {
+    return serveStaticFile(APP_JS_URL, "text/javascript; charset=utf-8");
+  }
+
   if (url.pathname === "/api/generate") {
     return generate(request);
   }
 
   if (url.pathname === "/api/health") {
     return health(request);
+  }
+
+  if (url.pathname === "/api/session") {
+    return sessionHandler.fetch(request);
   }
 
   if (url.pathname === "/api/queue/latest") {
@@ -100,7 +121,7 @@ async function routeRequest(request: Request): Promise<Response> {
   );
 }
 
-function toWebRequest(req: IncomingMessage): Request {
+async function toWebRequest(req: IncomingMessage): Promise<Request> {
   const headers = new Headers();
 
   for (const [key, value] of Object.entries(req.headers)) {
@@ -115,11 +136,26 @@ function toWebRequest(req: IncomingMessage): Request {
 
   const host = req.headers.host || `localhost:${PORT}`;
   const url = new URL(req.url || "/", `http://${host}`);
+  const body =
+    req.method && req.method !== "GET" && req.method !== "HEAD"
+      ? await readRequestBody(req)
+      : undefined;
 
   return new Request(url, {
     method: req.method || "GET",
     headers,
+    ...(body ? { body: new Uint8Array(body) } : {}),
   });
+}
+
+async function readRequestBody(req: IncomingMessage): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks);
 }
 
 async function sendResponse(res: ServerResponse, response: Response): Promise<void> {
@@ -128,4 +164,15 @@ async function sendResponse(res: ServerResponse, response: Response): Promise<vo
 
   res.writeHead(response.status, headers);
   res.end(body);
+}
+
+async function serveStaticFile(fileUrl: URL, contentType: string): Promise<Response> {
+  const body = await readFile(fileUrl);
+
+  return new Response(body, {
+    headers: {
+      "content-type": contentType,
+      "cache-control": "no-store",
+    },
+  });
 }

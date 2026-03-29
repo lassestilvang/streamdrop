@@ -1,3 +1,4 @@
+import { requireAuth } from "../../_lib/auth.js";
 import { getPublicConfig, resolveConfig } from "../../_lib/config.js";
 import { getLatestSucceededBatchHtml } from "../../_lib/persistence.js";
 import { html, methodNotAllowed, toErrorResponse } from "../../_lib/http.js";
@@ -5,6 +6,7 @@ import { readBatchIndex } from "../../_lib/routes.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
+    requireAuth(request);
     const config = resolveConfig(request.url);
     const batchIndex = readBatchIndex(request.url);
     const batch = await getLatestSucceededBatchHtml(getPublicConfig(config), batchIndex);

@@ -1,9 +1,11 @@
+import { requireAuth } from "./_lib/auth.js";
 import { resolveConfig } from "./_lib/config.js";
 import { json, methodNotAllowed, toErrorResponse } from "./_lib/http.js";
 import { generateQueue } from "./_lib/service.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
+    requireAuth(request);
     const config = resolveConfig(request.url);
     const payload = await generateQueue(config);
     return json(payload);

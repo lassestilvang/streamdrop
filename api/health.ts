@@ -1,16 +1,29 @@
-import { resolveConfig } from "./_lib/config.js";
-import { json, methodNotAllowed } from "./_lib/http.js";
+import { requireAuth } from "./_lib/auth.js";
+import { getPublicConfig, resolveConfig } from "./_lib/config.js";
+import { json, methodNotAllowed, toErrorResponse } from "./_lib/http.js";
 
 export function GET(request: Request): Response {
+  try {
+    requireAuth(request);
+  } catch (error) {
+    return toErrorResponse(error);
+  }
+
   let configuration:
     | {
       ok: true;
-      collectionId: number;
       databaseConfigured: boolean;
+      collectionId: number;
+      search: string;
+      sort: string;
+      nested: boolean;
       maxArticles: number;
       maxMinutes: number;
+      wordsPerMinute: number;
       extractionConcurrency: number;
-      }
+      fetchTimeoutMs: number;
+      maxHtmlBytes: number;
+    }
     | {
         ok: false;
         code: string;
@@ -19,13 +32,11 @@ export function GET(request: Request): Response {
 
   try {
     const config = resolveConfig(request.url);
+    const defaults = getPublicConfig(config);
     configuration = {
       ok: true,
-      collectionId: config.collectionId,
       databaseConfigured: Boolean(process.env.DATABASE_URL),
-      maxArticles: config.maxArticles,
-      maxMinutes: config.maxMinutes,
-      extractionConcurrency: config.extractionConcurrency,
+      ...defaults,
     };
   } catch (error) {
     configuration = {

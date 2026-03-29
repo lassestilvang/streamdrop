@@ -11,6 +11,7 @@ import type {
   QueueBatch,
   QueueRunError,
   QueueRunRecord,
+  QueueRunSummaryRecord,
   QueueRunStatus,
   RaindropItem,
   SkippedArticle,
@@ -224,7 +225,7 @@ export async function getRunRecord(runId: string): Promise<QueueRunRecord | null
     .where(eq(queueRuns.id, runId))
     .limit(1);
 
-  return row ? mapRunRecord(row) : null;
+  return row ? mapRunRecord(row, true) : null;
 }
 
 export async function getLatestSucceededRun(config: PublicConfig): Promise<QueueRunRecord | null> {
@@ -236,7 +237,14 @@ export async function getLatestSucceededRun(config: PublicConfig): Promise<Queue
     .orderBy(desc(queueRuns.createdAt))
     .limit(1);
 
-  return row ? mapRunRecord(row) : null;
+  return row ? mapRunRecord(row, true) : null;
+}
+
+export async function listRecentRuns(limit: number): Promise<QueueRunSummaryRecord[]> {
+  const db = requireDatabase();
+  const rows = await db.select().from(queueRuns).orderBy(desc(queueRuns.createdAt)).limit(limit);
+
+  return rows.map((row) => mapRunRecord(row, false));
 }
 
 export async function getRunBatchHtml(runId: string, batchIndex: number): Promise<string | null> {
@@ -300,7 +308,18 @@ async function clearRunArtifacts(
   await tx.delete(queueRunSkips).where(eq(queueRunSkips.runId, runId));
 }
 
-function mapRunRecord(row: typeof queueRuns.$inferSelect): QueueRunRecord {
+function mapRunRecord(
+  row: typeof queueRuns.$inferSelect,
+  includeResult: true,
+): QueueRunRecord;
+function mapRunRecord(
+  row: typeof queueRuns.$inferSelect,
+  includeResult: false,
+): QueueRunSummaryRecord;
+function mapRunRecord(
+  row: typeof queueRuns.$inferSelect,
+  includeResult: boolean,
+): QueueRunRecord | QueueRunSummaryRecord {
   const totals =
     row.fetchedCount !== null &&
     row.extractedCount !== null &&
@@ -328,7 +347,7 @@ function mapRunRecord(row: typeof queueRuns.$inferSelect): QueueRunRecord {
     config: row.configJson,
     totals,
     error: row.errorJson ?? null,
-    result: row.resultJson ?? null,
+    result: includeResult ? (row.resultJson ?? null) : null,
   };
 }
 

@@ -1,3 +1,4 @@
+import { requireAuth } from "../../_lib/auth.js";
 import { AppError } from "../../_lib/errors.js";
 import { html, methodNotAllowed, toErrorResponse } from "../../_lib/http.js";
 import { getRunBatchHtml, getRunRecord } from "../../_lib/persistence.js";
@@ -5,6 +6,7 @@ import { parseRunIdFromPath, readBatchIndex } from "../../_lib/routes.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
+    requireAuth(request);
     const runId = parseRunIdFromPath(request.url);
     const batchIndex = readBatchIndex(request.url);
     const run = await getRunRecord(runId);

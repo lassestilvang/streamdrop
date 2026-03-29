@@ -123,3 +123,7 @@ export interface QueueRunRecord {
   error: QueueRunError | null;
   result: GenerateQueueResult | null;
 }
+
+export interface QueueRunSummaryRecord extends Omit<QueueRunRecord, "result"> {
+  result: null;
+}

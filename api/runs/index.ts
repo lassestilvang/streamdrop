@@ -1,9 +1,23 @@
+import { requireAuth } from "../_lib/auth.js";
 import { resolveConfig } from "../_lib/config.js";
 import { json, methodNotAllowed, toErrorResponse } from "../_lib/http.js";
+import { listRecentRuns } from "../_lib/persistence.js";
+import { readLimit } from "../_lib/routes.js";
 import { enqueueQueueRun } from "../_lib/service.js";
+
+export async function GET(request: Request): Promise<Response> {
+  try {
+    requireAuth(request);
+    const runs = await listRecentRuns(readLimit(request.url));
+    return json({ runs });
+  } catch (error) {
+    return toErrorResponse(error);
+  }
+}
 
 export async function POST(request: Request): Promise<Response> {
   try {
+    requireAuth(request);
     const config = resolveConfig(request.url);
     const run = await enqueueQueueRun(config);
 
@@ -25,11 +39,15 @@ export async function POST(request: Request): Promise<Response> {
 
 const handler = {
   fetch(request: Request): Promise<Response> | Response {
+    if (request.method === "GET") {
+      return GET(request);
+    }
+
     if (request.method === "POST") {
       return POST(request);
     }
 
-    return methodNotAllowed(["POST"]);
+    return methodNotAllowed(["GET", "POST"]);
   },
 };
 

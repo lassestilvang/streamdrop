@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Streamdrop Control Room</title>
+    <meta
+      name="description"
+      content="Generate, inspect, preview, and copy Streamdrop listening queues."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/web/app.css" />
+    <script type="module" src="/web/app.js"></script>
+  </head>
+  <body>
+    <div class="grain"></div>
+    <main class="shell">
+      <section class="hero panel">
+        <div class="hero-copy">
+          <p class="eyebrow">Single-user control surface</p>
+          <h1>Streamdrop Control Room</h1>
+          <p class="hero-text">
+            Generate listening queues, inspect skipped articles, preview batch HTML, and
+            watch queue reliability without touching raw endpoints.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <span id="sessionBadge" class="session-badge">Signed out</span>
+          <button id="logoutButton" class="ghost-button hidden" type="button">Sign out</button>
+        </div>
+      </section>
+
+      <section id="loginPanel" class="panel auth-panel">
+        <div>
+          <p class="eyebrow">Authentication</p>
+          <h2>Enter operator credentials</h2>
+          <p class="muted">
+            This deployment uses a single-user session gate. The UI will unlock once the
+            server accepts the credentials.
+          </p>
+        </div>
+        <form id="loginForm" class="auth-form">
+          <label>
+            <span>Username</span>
+            <input id="usernameInput" name="username" autocomplete="username" required />
+          </label>
+          <label>
+            <span>Password</span>
+            <input
+              id="passwordInput"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <button class="primary-button" type="submit">Unlock dashboard</button>
+          <p id="loginError" class="error-text"></p>
+        </form>
+      </section>
+
+      <section id="dashboard" class="dashboard hidden">
+        <section class="grid top-grid">
+          <article class="panel control-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Queue controls</p>
+                <h2>Generate or reload a queue</h2>
+              </div>
+              <button id="loadLatestButton" class="ghost-button" type="button">
+                Load latest stored queue
+              </button>
+            </div>
+
+            <form id="configForm" class="config-form">
+              <label>
+                <span>Search filter</span>
+                <input id="searchInput" name="search" placeholder="tag:tts" />
+              </label>
+              <label>
+                <span>Collection ID</span>
+                <input id="collectionIdInput" name="collectionId" type="number" min="0" step="1" />
+              </label>
+              <label>
+                <span>Sort</span>
+                <select id="sortInput" name="sort">
+                  <option value="-created">Newest first</option>
+                  <option value="created">Oldest first</option>
+                  <option value="score">Score</option>
+                  <option value="-sort">Manual sort desc</option>
+                  <option value="title">Title A-Z</option>
+                  <option value="-title">Title Z-A</option>
+                  <option value="domain">Domain A-Z</option>
+                  <option value="-domain">Domain Z-A</option>
+                </select>
+              </label>
+              <label>
+                <span>Nested collections</span>
+                <select id="nestedInput" name="nested">
+                  <option value="true">Enabled</option>
+                  <option value="false">Disabled</option>
+                </select>
+              </label>
+              <label>
+                <span>Max articles</span>
+                <input id="maxArticlesInput" name="maxArticles" type="number" min="1" step="1" />
+              </label>
+              <label>
+                <span>Target minutes</span>
+                <input id="maxMinutesInput" name="maxMinutes" type="number" min="5" step="1" />
+              </label>
+              <label>
+                <span>Words per minute</span>
+                <input
+                  id="wordsPerMinuteInput"
+                  name="wordsPerMinute"
+                  type="number"
+                  min="80"
+                  step="1"
+                />
+              </label>
+              <label>
+                <span>Concurrency</span>
+                <input id="concurrencyInput" name="concurrency" type="number" min="1" step="1" />
+              </label>
+              <label>
+                <span>Fetch timeout (ms)</span>
+                <input
+                  id="timeoutMsInput"
+                  name="timeoutMs"
+                  type="number"
+                  min="1000"
+                  step="100"
+                />
+              </label>
+              <label>
+                <span>Max HTML bytes</span>
+                <input
+                  id="maxHtmlBytesInput"
+                  name="maxHtmlBytes"
+                  type="number"
+                  min="100000"
+                  step="1000"
+                />
+              </label>
+            </form>
+
+            <div class="control-actions">
+              <button id="generateButton" class="primary-button" type="button">
+                Generate fresh queue
+              </button>
+              <div class="status-stack">
+                <p id="runStatus" class="status-text">No run loaded.</p>
+                <p id="runMeta" class="muted"></p>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel insight-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Service pulse</p>
+                <h2>What looks healthy right now</h2>
+              </div>
+            </div>
+            <div id="metricCards" class="metric-cards"></div>
+          </article>
+        </section>
+
+        <section class="grid lower-grid">
+          <article class="panel batches-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Batches</p>
+                <h2>Preview and copy output</h2>
+              </div>
+            </div>
+            <div id="batchList" class="batch-list"></div>
+          </article>
+
+          <article class="panel preview-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Preview</p>
+                <h2 id="previewTitle">Select a batch</h2>
+              </div>
+              <div class="preview-actions">
+                <button id="copyBatchButton" class="ghost-button" type="button" disabled>
+                  Copy HTML
+                </button>
+                <a id="openBatchLink" class="ghost-button disabled-link" href="/" target="_blank">
+                  Open HTML
+                </a>
+              </div>
+            </div>
+            <div id="batchMeta" class="batch-meta muted">
+              Choose a batch to inspect the rendered HTML and article lineup.
+            </div>
+            <iframe id="previewFrame" class="preview-frame" title="Batch preview"></iframe>
+            <div id="articleList" class="article-list"></div>
+          </article>
+        </section>
+
+        <section class="grid bottom-grid">
+          <article class="panel skipped-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Skipped articles</p>
+                <h2>What did not make the queue</h2>
+              </div>
+            </div>
+            <div id="skipSummary" class="muted">
+              No skipped articles for the current run.
+            </div>
+            <div id="skippedList" class="skipped-list"></div>
+          </article>
+
+          <article class="panel history-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Run history</p>
+                <h2>Recent reliability snapshots</h2>
+              </div>
+            </div>
+            <div id="historyList" class="history-list"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

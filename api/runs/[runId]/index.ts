@@ -1,3 +1,4 @@
+import { requireAuth } from "../../_lib/auth.js";
 import { AppError } from "../../_lib/errors.js";
 import { json, methodNotAllowed, toErrorResponse } from "../../_lib/http.js";
 import { getRunRecord } from "../../_lib/persistence.js";
@@ -5,6 +6,7 @@ import { parseRunIdFromPath } from "../../_lib/routes.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
+    requireAuth(request);
     const runId = parseRunIdFromPath(request.url);
     const run = await getRunRecord(runId);
 

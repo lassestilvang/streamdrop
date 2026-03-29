@@ -1,9 +1,11 @@
+import { requireAuth } from "../../_lib/auth.js";
 import { getPublicConfig, resolveConfig } from "../../_lib/config.js";
 import { getLatestSucceededRun } from "../../_lib/persistence.js";
 import { json, methodNotAllowed, toErrorResponse } from "../../_lib/http.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
+    requireAuth(request);
     const config = resolveConfig(request.url);
     const run = await getLatestSucceededRun(getPublicConfig(config));
 

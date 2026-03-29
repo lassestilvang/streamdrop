@@ -28,3 +28,20 @@ export function readBatchIndex(requestUrl: string): number {
 
   return batchIndex;
 }
+
+export function readLimit(requestUrl: string, fallback = 12, max = 50): number {
+  const url = new URL(requestUrl);
+  const limit = url.searchParams.get("limit");
+
+  if (!limit) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(limit, 10);
+
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > max) {
+    throw new AppError(400, "INVALID_QUERY", `limit must be an integer between 1 and ${max}.`);
+  }
+
+  return parsed;
+}
