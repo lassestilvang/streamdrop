@@ -1,7 +1,27 @@
 {
+  "name": "streamdrop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Generate listening-friendly HTML queues from Raindrop articles.",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "start": "tsx scripts/dev.ts",
+    "test": "node --import tsx --test test/**/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test"
+  },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
-    "jsdom": "^29.0.1",
-    "node-fetch": "^3.3.2"
+    "jsdom": "^29.0.1"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^24.7.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }
