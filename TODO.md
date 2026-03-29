@@ -16,7 +16,7 @@
 
 ## Deployment and Security
 
-* [ ] Add CI for typecheck, tests, and deployment-safe validation. Run `npm run check` on every push/PR and fail fast on regressions.
+* [x] Add CI for typecheck, tests, and deployment-safe validation. GitHub Actions now runs `npm ci` and `npm run check` on every push and pull request in `.github/workflows/ci.yml`.
 * [ ] Protect the public API before exposing it on Vercel. Add authentication for `/api/generate` and `/api/health`, or explicitly scope health to non-sensitive checks if it stays public.
 * [ ] Add rate limiting and abuse controls. Prevent repeated expensive extraction requests from exhausting Vercel execution time or upstream bandwidth.
 * [ ] Add request/response guardrails for production traffic. Define max request frequency, acceptable query overrides, and safe defaults for expensive knobs like `maxArticles` and `concurrency`.
