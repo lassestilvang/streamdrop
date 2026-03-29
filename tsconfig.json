@@ -13,5 +13,5 @@
     "verbatimModuleSyntax": true,
     "types": ["node"]
   },
-  "include": ["api/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"]
+  "include": ["api/**/*.ts", "db/**/*.ts", "scripts/**/*.ts", "test/**/*.ts", "drizzle.config.ts"]
 }
