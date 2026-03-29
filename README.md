@@ -148,7 +148,7 @@ curl https://your-project.vercel.app/api/health
 curl 'https://your-project.vercel.app/api/generate?maxArticles=5'
 ```
 
-## Response shape
+## 💬 Response shape
 
 `GET /api/generate` returns JSON with:
 
