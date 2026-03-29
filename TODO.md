@@ -23,9 +23,10 @@
 
 ## Reliability and Operations
 
-* [ ] Add persistent storage for generated queues and run history. Keep enough metadata to inspect previous runs, compare outputs, and support retrieval without re-fetching everything.
+* [x] Add persistent storage for generated queues and run history. Successful queue generations are now persisted in Postgres with run, batch, article, and skip records so previous outputs can be inspected and reused without re-fetching upstream content.
 * [ ] Add background or asynchronous generation for larger queues. Move long-running work off the synchronous request path when cache misses or large collections make single-request generation unreliable.
 * [ ] Define the async run lifecycle and API contract. Add run statuses (`queued`, `running`, `succeeded`, `failed`), polling/retrieval endpoints, idempotency rules, and failure/retry handling.
 * [ ] Add observability and alerting. Capture structured logs, extraction failure rates, upstream timeout rates, and deployment/runtime errors.
+* [ ] Add a production-safe migration workflow. Ensure Drizzle migrations are applied to the target database on deploy or via a deliberate release step before runtime code depends on new tables.
 * [ ] Add deployment smoke checks and runbooks. Document what to verify after each Vercel deploy and what to do when Raindrop auth, extraction, or quota failures start happening.
 * [ ] Add integration tests that cover real route behavior with mocked upstreams. Verify error mapping, timeout handling, skipped-article behavior, and HTML rendering from the API surface, not just helpers.
