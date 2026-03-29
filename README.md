@@ -1,8 +1,48 @@
-# Streamdrop
+# 🎧 Streamdrop
 
 Streamdrop turns saved Raindrop links into listening-sized HTML queues for ElevenReader. It is written in TypeScript, designed for Vercel deployment, and does the heavy work server-side: fetch bookmarks, extract readable article text, batch by estimated reading time, and return ready-to-paste HTML.
 
-## Architecture
+## ✨ Why Streamdrop?
+
+Most text-to-speech apps optimize for **reading one article at a time**.
+
+Streamdrop flips that:
+
+> Turn your reading backlog into a **podcast-like listening experience**
+
+* ✅ Continuous playback (no manual switching)
+* ✅ Works perfectly with ElevenReader
+* ✅ No expensive TTS API costs
+* ✅ Fully self-hosted (Vercel-friendly)
+* ✅ Clean article extraction
+
+---
+
+## 🚀 How It Works
+
+```
+Raindrop → Fetch → Extract → Clean → Batch → HTML → ElevenReader
+```
+
+1. Fetch unread articles from Raindrop API
+2. Extract clean content using Readability
+3. Estimate reading time
+4. Batch into ~30–60 min chunks
+5. Generate a structured HTML document
+6. Paste into ElevenReader → listen 🎧
+
+---
+
+## 📦 Features
+
+* 📚 Fetch articles from Raindrop
+* 🧹 Clean extraction (no ads, nav, clutter)
+* ⏱️ Smart batching based on reading time
+* 🎧 Optimized for TTS (clear separators, structure)
+* ⚡ Serverless (deploy on Vercel)
+* 💸 Zero ongoing cost (uses ElevenReader free tier)
+
+## 📐 Architecture
 
 The service is split into small modules under `api/_lib`:
 
@@ -17,7 +57,7 @@ Routes:
 - `api/generate.js`: main queue-generation endpoint.
 - `api/health.js`: health/configuration check for deployments.
 
-## Local development
+## 💻 Local development
 
 Install dependencies:
 
@@ -55,7 +95,7 @@ Run the TypeScript compiler:
 npm run typecheck
 ```
 
-## Configuration
+## 🛠️ Configuration
 
 Required:
 
@@ -91,7 +131,7 @@ Supported query parameters:
 - `timeoutMs`
 - `maxHtmlBytes`
 
-## Deployment on Vercel
+## ☁️ Deployment on Vercel
 
 1. Push the repository to GitHub.
 2. Import it into Vercel as a project.
