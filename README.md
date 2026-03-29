@@ -2,6 +2,8 @@
 
 Streamdrop turns saved Raindrop links into listening-sized HTML queues for ElevenReader. It is written in TypeScript, designed for Vercel deployment, and does the heavy work server-side: fetch bookmarks, extract readable article text, batch by estimated reading time, and return ready-to-paste HTML.
 
+The project pins Node.js to `24.x` so Vercel does not silently roll the app onto a newer major runtime.
+
 ## ✨ Why Streamdrop?
 
 Most text-to-speech apps optimize for **reading one article at a time**.
