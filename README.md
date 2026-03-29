@@ -46,7 +46,14 @@ The service is split into small modules under `api/_lib`:
 - `raindrop.js`: paginated Raindrop API client.
 - `extract.js`: bounded article fetch and Readability extraction with concurrency limits.
 - `queue.js`: batching and HTML rendering.
+- `persistence.js`: stores successful runs, batches, articles, and skips in Postgres.
 - `service.js`: orchestration layer used by the API routes.
+
+Database modules:
+
+- `db/schema.ts`: Drizzle schema for persisted queue runs.
+- `db/client.ts`: shared Postgres/Drizzle client for runtime and migrations.
+- `drizzle/`: generated SQL migrations.
 
 Routes:
 
@@ -61,12 +68,13 @@ Install dependencies:
 npm install
 ```
 
-Create `.env.local` or export variables in your shell:
+Create `.env.local`:
 
 ```bash
 cp .env.example .env.local
-export $(grep -v '^#' .env.local | xargs)
 ```
+
+Local scripts load `.env.local` automatically.
 
 Start the local server:
 
@@ -91,10 +99,23 @@ Run the TypeScript compiler:
 npm run typecheck
 ```
 
+Generate a migration after schema changes:
+
+```bash
+npm run db:generate
+```
+
+Apply migrations:
+
+```bash
+npm run db:migrate
+```
+
 ## 🛠️ Configuration
 
 Required:
 
+- `DATABASE_URL`: Postgres connection string for persisted queue history.
 - `RAINDROP_TOKEN`: Raindrop access token.
 
 Optional:
@@ -132,6 +153,7 @@ Supported query parameters:
 1. Push the repository to GitHub.
 2. Import it into Vercel as a project.
 3. Add the required environment variables in Vercel:
+   - `DATABASE_URL`
    - `RAINDROP_TOKEN`
    - Any optional variables you want to tune
 4. Deploy.
@@ -152,6 +174,7 @@ curl 'https://your-project.vercel.app/api/generate?maxArticles=5'
 
 `GET /api/generate` returns JSON with:
 
+- `runId`
 - `generatedAt`
 - `config`
 - `totals`
@@ -165,4 +188,5 @@ Each batch includes metadata plus an `html` field that can be pasted directly in
 - The service uses bounded upstream timeouts and per-document size caps to stay within Vercel’s request model.
 - It escapes rendered HTML, so article titles and body text do not become executable markup in the output.
 - Extraction failures are reported in `skipped` instead of failing the whole queue.
+- Successful runs are persisted to Postgres with per-batch, per-article, and skip metadata for later retrieval.
 - `/api/health` reports whether configuration is valid without exposing secrets.
