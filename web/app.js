@@ -5,6 +5,8 @@ const state = {
   recentRuns: [],
   selectedBatchIndex: null,
   loading: false,
+  publicBatchLink: null,
+  publicBatchLinkExpiresAt: null,
 };
 
 const elements = {
@@ -78,6 +80,8 @@ elements.logoutButton?.addEventListener("click", async () => {
   state.authenticated = false;
   state.latestRun = null;
   state.recentRuns = [];
+  state.publicBatchLink = null;
+  state.publicBatchLinkExpiresAt = null;
   render();
 });
 
@@ -111,6 +115,8 @@ elements.generateButton?.addEventListener("click", async () => {
 
     state.latestRun = completedRun;
     state.selectedBatchIndex = completedRun.result.batches[0]?.index ?? null;
+    state.publicBatchLink = null;
+    state.publicBatchLinkExpiresAt = null;
     setRunStatus("Queue ready.", `Stored run ${completedRun.id} finished successfully.`);
     await refreshHistory();
     render();
@@ -199,10 +205,14 @@ async function loadLatestQueue() {
       result: payload,
     };
     state.selectedBatchIndex = payload.batches[0]?.index ?? null;
+    state.publicBatchLink = null;
+    state.publicBatchLinkExpiresAt = null;
   } catch (error) {
     if (error.status === 404) {
       state.latestRun = null;
       state.selectedBatchIndex = null;
+      state.publicBatchLink = null;
+      state.publicBatchLinkExpiresAt = null;
       return;
     }
 
@@ -355,6 +365,8 @@ function renderBatches() {
   elements.batchList.querySelectorAll("[data-select-batch]").forEach((button) => {
     button.addEventListener("click", () => {
       state.selectedBatchIndex = Number(button.getAttribute("data-select-batch"));
+      state.publicBatchLink = null;
+      state.publicBatchLinkExpiresAt = null;
       render();
     });
   });
@@ -382,6 +394,7 @@ function renderPreview() {
     elements.batchMeta.textContent = "Choose a batch to inspect the rendered HTML and article lineup.";
     elements.previewFrame.srcdoc = "";
     elements.copyBatchButton.disabled = true;
+    elements.openBatchLink.href = "/";
     elements.openBatchLink.classList.add("disabled-link");
     elements.articleList.innerHTML = "";
     return;
@@ -391,8 +404,7 @@ function renderPreview() {
   elements.batchMeta.textContent = `${batch.articleCount} articles · ${batch.wordCount.toLocaleString()} words · ${batch.estimatedMinutes} minutes`;
   elements.previewFrame.srcdoc = batch.html;
   elements.copyBatchButton.disabled = false;
-  elements.openBatchLink.href = `/api/runs/${state.latestRun.id}/html?batch=${batch.index}`;
-  elements.openBatchLink.classList.remove("disabled-link");
+  renderPublicBatchLink(batch.index);
   elements.articleList.innerHTML = batch.articles
     .map(
       (article) => `
@@ -477,6 +489,45 @@ function buildQueryString() {
 
 function getSelectedBatch() {
   return state.latestRun?.result?.batches.find((batch) => batch.index === state.selectedBatchIndex) || null;
+}
+
+function renderPublicBatchLink(batchIndex) {
+  const hasCurrentLink =
+    typeof state.publicBatchLink === "string" &&
+    state.publicBatchLink.includes(`/api/runs/${state.latestRun.id}/html?`) &&
+    state.publicBatchLink.includes(`batch=${batchIndex}`);
+
+  if (hasCurrentLink) {
+    elements.openBatchLink.href = state.publicBatchLink;
+    elements.openBatchLink.classList.remove("disabled-link");
+    return;
+  }
+
+  elements.openBatchLink.href = "/";
+  elements.openBatchLink.classList.add("disabled-link");
+  void loadPublicBatchLink(batchIndex);
+}
+
+async function loadPublicBatchLink(batchIndex) {
+  if (!state.latestRun) {
+    return;
+  }
+
+  try {
+    const payload = await api(`/api/runs/${state.latestRun.id}/html-link?batch=${batchIndex}`);
+
+    if (!state.latestRun || state.selectedBatchIndex !== batchIndex) {
+      return;
+    }
+
+    state.publicBatchLink = payload.publicUrl;
+    state.publicBatchLinkExpiresAt = payload.expiresAt;
+    elements.openBatchLink.href = payload.publicUrl;
+    elements.openBatchLink.classList.remove("disabled-link");
+  } catch (error) {
+    console.error(error);
+    setRunStatus("Could not mint a public batch link.", error.message || "Unexpected error.");
+  }
 }
 
 function countSuccessStreak(runs) {

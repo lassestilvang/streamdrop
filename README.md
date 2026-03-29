@@ -68,6 +68,7 @@ Routes:
 - `api/runs/index.js`: list recent runs or create queued runs for async processing.
 - `api/runs/[runId]/index.js`: inspect persisted run state.
 - `api/runs/[runId]/process.js`: process a queued run.
+- `api/runs/[runId]/html-link.js`: mint signed public HTML links for a specific run batch.
 - `api/runs/[runId]/html.js`: retrieve stored HTML for a specific run batch.
 
 ## 💻 Local development
@@ -106,6 +107,7 @@ Available endpoints:
 - `POST /api/runs`
 - `GET /api/runs/:runId`
 - `POST /api/runs/:runId/process`
+- `GET /api/runs/:runId/html-link?batch=1`
 - `GET /api/runs/:runId/html?batch=1`
 
 Run the test suite:
@@ -144,6 +146,8 @@ Optional:
 - `APP_USERNAME`: single-user dashboard username. Default `streamdrop`.
 - `APP_PASSWORD`: single-user dashboard password. Default `streamdrop`.
 - `SESSION_SECRET`: cookie-signing secret for the web UI session.
+- `HTML_LINK_SIGNING_SECRET`: server-only secret used to sign public batch HTML links.
+- `HTML_LINK_TTL_SECONDS`: expiry window for public batch HTML links. Default `2592000` (30 days).
 - `RAINDROP_COLLECTION_ID`: collection to read from. Default `0` for all collections except trash.
 - `RAINDROP_SEARCH`: Raindrop search filter.
 - `MAX_MINUTES`: target duration per output batch. Default `45`.
@@ -180,6 +184,7 @@ Open `/` to use the dashboard. It adds:
 - Queue generation from the browser using the existing queued-run lifecycle.
 - Stored latest-queue retrieval for the current configuration.
 - Batch preview, copy-to-clipboard, and direct HTML opening.
+- Public signed batch HTML links for ElevenReader or other unauthenticated consumers.
 - Skipped-article inspection.
 - Recent run history and operator stats such as extraction rate, success streak, and skip pressure.
 
@@ -245,6 +250,7 @@ Retrieval:
 - `GET /api/queue/latest/html?batch=1` returns stored HTML for a batch from that latest run.
 - `GET /api/runs?limit=12` returns recent persisted run summaries for dashboard/history views.
 - `GET /api/runs/:runId` returns the persisted lifecycle state for a specific run.
+- `GET /api/runs/:runId/html-link?batch=1` returns a signed public URL for a specific successful run batch.
 - `GET /api/runs/:runId/html?batch=1` returns stored HTML for a specific successful run.
 
 Async lifecycle:
@@ -265,3 +271,4 @@ Current limitation:
 - Successful runs are persisted to Postgres with per-batch, per-article, and skip metadata for later retrieval.
 - `/api/health` reports whether configuration is valid without exposing secrets.
 - Queue, run, and health endpoints require the single-user session gate exposed by `/api/session`.
+- Batch HTML can also be accessed through time-limited signed URLs minted by `/api/runs/:runId/html-link`.

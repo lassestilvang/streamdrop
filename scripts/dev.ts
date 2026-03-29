@@ -9,6 +9,7 @@ import latestQueueHtmlHandler from "../api/queue/latest/html.js";
 import runsHandler from "../api/runs/index.js";
 import runHandler from "../api/runs/[runId]/index.js";
 import runHtmlHandler from "../api/runs/[runId]/html.js";
+import runHtmlLinkHandler from "../api/runs/[runId]/html-link.js";
 import runProcessHandler from "../api/runs/[runId]/process.js";
 import sessionHandler from "../api/session.js";
 
@@ -91,6 +92,10 @@ async function routeRequest(request: Request): Promise<Response> {
 
   if (/^\/api\/runs\/[^/]+\/process$/.test(url.pathname)) {
     return runProcessHandler.fetch(request);
+  }
+
+  if (/^\/api\/runs\/[^/]+\/html-link$/.test(url.pathname)) {
+    return runHtmlLinkHandler.fetch(request);
   }
 
   if (/^\/api\/runs\/[^/]+\/html$/.test(url.pathname)) {

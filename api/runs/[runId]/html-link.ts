@@ -1,27 +1,15 @@
 import { requireAuth } from "../../_lib/auth.js";
 import { AppError } from "../../_lib/errors.js";
-import { html, methodNotAllowed, toErrorResponse } from "../../_lib/http.js";
+import { json, methodNotAllowed, toErrorResponse } from "../../_lib/http.js";
 import { getRunBatchHtml, getRunRecord } from "../../_lib/persistence.js";
-import { verifyPublicBatchToken } from "../../_lib/public-html.js";
+import { createPublicBatchToken } from "../../_lib/public-html.js";
 import { parseRunIdFromPath, readBatchIndex } from "../../_lib/routes.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
+    requireAuth(request);
     const runId = parseRunIdFromPath(request.url);
     const batchIndex = readBatchIndex(request.url);
-    const requestUrl = new URL(request.url);
-
-    if (
-      !verifyPublicBatchToken(
-        runId,
-        batchIndex,
-        requestUrl.searchParams.get("expires"),
-        requestUrl.searchParams.get("token"),
-      )
-    ) {
-      requireAuth(request);
-    }
-
     const run = await getRunRecord(runId);
 
     if (!run) {
@@ -38,10 +26,17 @@ export async function GET(request: Request): Promise<Response> {
       throw new AppError(404, "BATCH_NOT_FOUND", "Batch not found for the requested run.");
     }
 
-    return html(batchHtml, {
-      headers: {
-        "x-run-id": runId,
-      },
+    const { expiresAt, token } = createPublicBatchToken(runId, batchIndex);
+    const requestUrl = new URL(request.url);
+    const publicUrl = new URL(`/api/runs/${encodeURIComponent(runId)}/html`, requestUrl.origin);
+
+    publicUrl.searchParams.set("batch", String(batchIndex));
+    publicUrl.searchParams.set("expires", expiresAt);
+    publicUrl.searchParams.set("token", token);
+
+    return json({
+      publicUrl: publicUrl.toString(),
+      expiresAt,
     });
   } catch (error) {
     return toErrorResponse(error);
