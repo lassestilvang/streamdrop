@@ -160,7 +160,7 @@ curl 'https://your-project.vercel.app/api/generate?maxArticles=5'
 
 Each batch includes metadata plus an `html` field that can be pasted directly into ElevenReader.
 
-## Operational notes
+## 📝 Operational notes
 
 - The service uses bounded upstream timeouts and per-document size caps to stay within Vercel’s request model.
 - It escapes rendered HTML, so article titles and body text do not become executable markup in the output.
