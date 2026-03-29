@@ -59,6 +59,12 @@ Routes:
 
 - `api/generate.js`: main queue-generation endpoint.
 - `api/health.js`: health/configuration check for deployments.
+- `api/queue/latest/index.js`: latest stored successful queue for a configuration.
+- `api/queue/latest/html.js`: stored HTML for a latest queue batch.
+- `api/runs/index.js`: create queued runs for async processing.
+- `api/runs/[runId]/index.js`: inspect persisted run state.
+- `api/runs/[runId]/process.js`: process a queued run.
+- `api/runs/[runId]/html.js`: retrieve stored HTML for a specific run batch.
 
 ## 💻 Local development
 
@@ -86,6 +92,12 @@ Available endpoints:
 
 - `GET /api/health`
 - `GET /api/generate`
+- `GET /api/queue/latest`
+- `GET /api/queue/latest/html?batch=1`
+- `POST /api/runs`
+- `GET /api/runs/:runId`
+- `POST /api/runs/:runId/process`
+- `GET /api/runs/:runId/html?batch=1`
 
 Run the test suite:
 
@@ -193,10 +205,33 @@ Schema changes:
 
 Each batch includes metadata plus an `html` field that can be pasted directly into ElevenReader.
 
+## 🔁 Stored runs and async flow
+
+Synchronous generation:
+
+- `GET /api/generate` generates a queue immediately, returns the JSON payload, and persists the run as `succeeded` or `failed`.
+
+Retrieval:
+
+- `GET /api/queue/latest` returns the latest successful stored run for the requested configuration.
+- `GET /api/queue/latest/html?batch=1` returns stored HTML for a batch from that latest run.
+- `GET /api/runs/:runId` returns the persisted lifecycle state for a specific run.
+- `GET /api/runs/:runId/html?batch=1` returns stored HTML for a specific successful run.
+
+Async lifecycle:
+
+- `POST /api/runs` creates a persisted run in `queued` state.
+- `POST /api/runs/:runId/process` processes that queued run and transitions it through `running` to `succeeded` or `failed`.
+
+Current limitation:
+
+- The async lifecycle is explicit but not yet self-driving. A caller still has to invoke the process endpoint; there is not yet a separate worker/cron path that drains queued runs automatically.
+
 ## 📝 Operational notes
 
 - The service uses bounded upstream timeouts and per-document size caps to stay within Vercel’s request model.
 - It escapes rendered HTML, so article titles and body text do not become executable markup in the output.
-- Extraction failures are reported in `skipped` instead of failing the whole queue.
+- Article-level extraction failures are reported in `skipped` instead of failing the whole queue.
+- Whole-run failures are persisted to Postgres with status and structured error details.
 - Successful runs are persisted to Postgres with per-batch, per-article, and skip metadata for later retrieval.
 - `/api/health` reports whether configuration is valid without exposing secrets.
