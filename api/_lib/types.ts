@@ -27,6 +27,14 @@ export interface PublicConfig {
   maxHtmlBytes: number;
 }
 
+export type QueueRunStatus = "queued" | "running" | "succeeded" | "failed";
+
+export interface QueueRunError {
+  code: string;
+  message: string;
+  details?: unknown;
+}
+
 export interface RaindropItem {
   id: number;
   title: string;
@@ -92,4 +100,26 @@ export interface GenerateQueueResult {
   };
   batches: QueueBatchResult[];
   skipped: SkippedArticle[];
+}
+
+export interface QueueRunRecord {
+  id: string;
+  status: QueueRunStatus;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  generatedAt: string | null;
+  config: PublicConfig;
+  totals:
+    | {
+        fetched: number;
+        extracted: number;
+        skipped: number;
+        batches: number;
+        words: number;
+        estimatedMinutes: number;
+      }
+    | null;
+  error: QueueRunError | null;
+  result: GenerateQueueResult | null;
 }
