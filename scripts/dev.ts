@@ -3,6 +3,12 @@ import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import { loadLocalEnv } from "./load-env.js";
 import { GET as generate } from "../api/generate.js";
 import { GET as health } from "../api/health.js";
+import latestQueueHandler from "../api/queue/latest/index.js";
+import latestQueueHtmlHandler from "../api/queue/latest/html.js";
+import runsHandler from "../api/runs/index.js";
+import runHandler from "../api/runs/[runId]/index.js";
+import runHtmlHandler from "../api/runs/[runId]/html.js";
+import runProcessHandler from "../api/runs/[runId]/process.js";
 
 loadLocalEnv();
 
@@ -35,6 +41,8 @@ server.listen(PORT, () => {
   console.log(`Streamdrop dev server listening on http://localhost:${PORT}`);
   console.log(`Generate queue: http://localhost:${PORT}/api/generate`);
   console.log(`Health check:   http://localhost:${PORT}/api/health`);
+  console.log(`Latest queue:   http://localhost:${PORT}/api/queue/latest`);
+  console.log(`Runs API:       http://localhost:${PORT}/api/runs`);
 });
 
 async function routeRequest(request: Request): Promise<Response> {
@@ -46,6 +54,30 @@ async function routeRequest(request: Request): Promise<Response> {
 
   if (url.pathname === "/api/health") {
     return health(request);
+  }
+
+  if (url.pathname === "/api/queue/latest") {
+    return latestQueueHandler.fetch(request);
+  }
+
+  if (url.pathname === "/api/queue/latest/html") {
+    return latestQueueHtmlHandler.fetch(request);
+  }
+
+  if (url.pathname === "/api/runs") {
+    return runsHandler.fetch(request);
+  }
+
+  if (/^\/api\/runs\/[^/]+\/process$/.test(url.pathname)) {
+    return runProcessHandler.fetch(request);
+  }
+
+  if (/^\/api\/runs\/[^/]+\/html$/.test(url.pathname)) {
+    return runHtmlHandler.fetch(request);
+  }
+
+  if (/^\/api\/runs\/[^/]+$/.test(url.pathname)) {
+    return runHandler.fetch(request);
   }
 
   return new Response(
