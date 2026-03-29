@@ -8,7 +8,7 @@
 * [ ] Generate AI summaries per article (e.g. before each article `Summary: ...`). Keep summaries optional, bounded in length, and isolated from the core extraction flow so queue generation still works without the model step.
 * [ ] Auto daily generation (cron). Define the schedule, destination of the generated output, and retry behavior when upstream extraction fails.
 * [ ] Multi-language support. Decide whether this means language-aware extraction, different reading-speed defaults, translated UI text, or generated summaries in multiple languages.
-* [ ] Web UI (view + copy queue easily). Add a simple authenticated interface for generating, previewing, copying, and inspecting skipped articles.
+* [x] Web UI (view + copy queue easily). A single-user dashboard now lives at `/`, with signed-cookie auth, queue generation controls, stored-queue loading, batch preview/copy actions, skipped-article inspection, and recent run stats.
 * [ ] One-tap iPhone Shortcut integration (one tap to fetch latest queue and open in ElevenReader). Specify the response format and shortcut flow so this works without manual HTML copy/paste.
 * [ ] Deduplication + scoring. Prevent repeated articles across runs and define how freshness, length, source quality, tags, or favorites affect queue priority.
 * [ ] “Smart batching” (detect complexity, adjust pacing). Replace pure word-count batching with a configurable heuristic that considers article difficulty, density, or source type.
@@ -17,7 +17,7 @@
 ## Deployment and Security
 
 * [x] Add CI for typecheck, tests, and deployment-safe validation. GitHub Actions now runs `npm ci` and `npm run check` on every push and pull request in `.github/workflows/ci.yml`.
-* [ ] Protect the public API before exposing it on Vercel. Add authentication for `/api/generate` and `/api/health`, or explicitly scope health to non-sensitive checks if it stays public.
+* [x] Protect the public API before exposing it on Vercel. The queue, run, and health endpoints now require a single-user session created via `/api/session`, matching the authenticated web UI.
 * [ ] Add rate limiting and abuse controls. Prevent repeated expensive extraction requests from exhausting Vercel execution time or upstream bandwidth.
 * [ ] Add request/response guardrails for production traffic. Define max request frequency, acceptable query overrides, and safe defaults for expensive knobs like `maxArticles` and `concurrency`.
 
