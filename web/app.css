@@ -32,6 +32,11 @@ body {
   min-height: 100vh;
 }
 
+body.app-loading #loginPanel,
+body.app-loading #dashboard {
+  display: none;
+}
+
 button,
 input,
 select {
@@ -131,6 +136,7 @@ select {
 }
 
 .auth-panel,
+.boot-panel,
 .control-panel,
 .insight-panel,
 .batches-panel,
@@ -138,6 +144,10 @@ select {
 .skipped-panel,
 .history-panel {
   padding: 24px;
+}
+
+.boot-panel {
+  margin-bottom: 18px;
 }
 
 .dashboard,

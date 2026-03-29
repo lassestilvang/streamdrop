@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/web/app.css" />
     <script type="module" src="/web/app.js"></script>
   </head>
-  <body>
+  <body class="app-loading">
     <div class="grain"></div>
     <main class="shell">
       <section class="hero panel">
@@ -33,6 +33,12 @@
           <span id="sessionBadge" class="session-badge">Signed out</span>
           <button id="logoutButton" class="ghost-button hidden" type="button">Sign out</button>
         </div>
+      </section>
+
+      <section id="bootPanel" class="panel boot-panel">
+        <p class="eyebrow">Session check</p>
+        <h2>Checking dashboard access</h2>
+        <p class="muted">Verifying the existing session before rendering the operator UI.</p>
       </section>
 
       <section id="loginPanel" class="panel auth-panel">

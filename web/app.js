@@ -7,9 +7,11 @@ const state = {
   loading: false,
   publicBatchLink: null,
   publicBatchLinkExpiresAt: null,
+  initialized: false,
 };
 
 const elements = {
+  bootPanel: document.querySelector("#bootPanel"),
   loginPanel: document.querySelector("#loginPanel"),
   loginForm: document.querySelector("#loginForm"),
   loginError: document.querySelector("#loginError"),
@@ -48,7 +50,10 @@ const formFields = {
 
 boot().catch((error) => {
   console.error(error);
+  state.initialized = true;
+  document.body.classList.remove("app-loading");
   setRunStatus("Failed to load the dashboard.", error.message || "Unexpected error.");
+  render();
 });
 
 elements.loginForm?.addEventListener("submit", async (event) => {
@@ -167,17 +172,23 @@ elements.copyBatchButton?.addEventListener("click", async () => {
 });
 
 async function boot() {
-  const session = await api("/api/session");
-  state.authenticated = Boolean(session.authenticated);
+  try {
+    const session = await api("/api/session");
+    state.authenticated = Boolean(session.authenticated);
 
-  if (!state.authenticated) {
+    if (!state.authenticated) {
+      state.initialized = true;
+      render();
+      return;
+    }
+
+    await loadHealth();
+    await Promise.all([loadLatestQueue(), refreshHistory()]);
+    state.initialized = true;
     render();
-    return;
+  } finally {
+    document.body.classList.remove("app-loading");
   }
-
-  await loadHealth();
-  await Promise.all([loadLatestQueue(), refreshHistory()]);
-  render();
 }
 
 async function loadHealth() {
@@ -244,6 +255,8 @@ function hydrateForm(configuration) {
 }
 
 function render() {
+  document.body.classList.toggle("app-loading", !state.initialized);
+  elements.bootPanel.classList.toggle("hidden", state.initialized);
   elements.loginPanel.classList.toggle("hidden", state.authenticated);
   elements.dashboard.classList.toggle("hidden", !state.authenticated);
   elements.logoutButton.classList.toggle("hidden", !state.authenticated);
