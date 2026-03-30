@@ -16,21 +16,36 @@ const AUTH_ENV = {
 };
 
 test("validateCredentials checks configured single-user credentials", () => {
-  assert.equal(validateCredentials("operator", "secret-pass", AUTH_ENV), true);
-  assert.equal(validateCredentials("operator", "wrong", AUTH_ENV), false);
+  return Promise.all([
+    validateCredentials("operator", "secret-pass", AUTH_ENV),
+    validateCredentials("operator", "wrong", AUTH_ENV),
+  ]).then(([valid, invalid]) => {
+    assert.deepEqual(valid, {
+      userId: "legacy-single-user",
+      username: "operator",
+    });
+    assert.equal(invalid, null);
+  });
 });
 
-test("session cookies authenticate requests", () => {
-  const cookie = createSessionCookie(AUTH_ENV);
+test("session cookies authenticate requests", async () => {
+  const cookie = await createSessionCookie(
+    {
+      userId: "legacy-single-user",
+      username: "operator",
+    },
+    AUTH_ENV,
+  );
   const request = new Request("https://example.com/api/health", {
     headers: {
       cookie,
     },
   });
 
-  assert.equal(isAuthenticated(request, AUTH_ENV), true);
-  assert.deepEqual(getSession(request, AUTH_ENV), {
+  assert.equal(await isAuthenticated(request, AUTH_ENV), true);
+  assert.deepEqual(await getSession(request, AUTH_ENV), {
     authenticated: true,
+    userId: "legacy-single-user",
     username: "operator",
   });
 });
