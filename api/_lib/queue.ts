@@ -39,10 +39,10 @@ export function createBatches(
 }
 
 export function renderBatchHtml(batch: QueueBatch): string {
-  const articleCountLabel = batch.articleCount === 1 ? "article" : "articles";
+  const language = detectBatchLanguage(batch);
   let body = "";
 
-  for (const [index, article] of batch.articles.entries()) {
+  for (const article of batch.articles) {
     const paragraphs = article.content
       .split(/\n{2,}/)
       .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
@@ -51,11 +51,9 @@ export function renderBatchHtml(batch: QueueBatch): string {
     body += `
       <section class="article">
         <div class="separator">Next article</div>
-        <h2>${index + 1}. ${escapeHtml(article.title)}</h2>
+        <h2>${escapeHtml(article.title)}</h2>
         <p class="meta">
-          Estimated reading time: ${formatMinutes(article.minutes)}
-          <br />
-          Source: <a href="${escapeAttribute(article.sourceUrl)}">${escapeHtml(article.sourceUrl)}</a>
+          Source: <a href="${escapeAttribute(article.sourceUrl)}">${escapeHtml(getSourceDomain(article.sourceUrl))}</a>
         </p>
         ${paragraphs}
       </section>
@@ -63,9 +61,10 @@ export function renderBatchHtml(batch: QueueBatch): string {
   }
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${language}">
   <head>
     <meta charset="utf-8" />
+    <meta http-equiv="content-language" content="${language}" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Listening Queue ${batch.index}</title>
     <style>
@@ -107,11 +106,6 @@ export function renderBatchHtml(batch: QueueBatch): string {
   <body>
     <header>
       <h1>Listening Queue ${batch.index}</h1>
-      <p class="summary">
-        ${batch.articleCount} ${articleCountLabel},
-        ${batch.wordCount.toLocaleString()} words,
-        about ${formatMinutes(batch.minutes)}.
-      </p>
     </header>
     ${body}
   </body>
@@ -138,8 +132,80 @@ function finalizeBatch(
   };
 }
 
-function formatMinutes(minutes: number): string {
-  return `${Math.max(1, Math.round(minutes))} min`;
+function detectBatchLanguage(batch: QueueBatch): "da" | "en" {
+  const sample = batch.articles
+    .map((article) => `${article.title}\n${article.content}`)
+    .join("\n")
+    .toLowerCase();
+
+  if (/[æøå]/.test(sample)) {
+    return "da";
+  }
+
+  const tokens = sample.match(/\p{L}+/gu) ?? [];
+  const danishWords = new Set([
+    "af",
+    "at",
+    "de",
+    "den",
+    "der",
+    "det",
+    "du",
+    "en",
+    "er",
+    "et",
+    "for",
+    "har",
+    "i",
+    "ikke",
+    "med",
+    "og",
+    "om",
+    "på",
+    "sig",
+    "som",
+    "til",
+  ]);
+  const englishWords = new Set([
+    "about",
+    "and",
+    "are",
+    "for",
+    "from",
+    "have",
+    "not",
+    "that",
+    "the",
+    "this",
+    "was",
+    "with",
+    "you",
+    "your",
+  ]);
+
+  let danishScore = 0;
+  let englishScore = 0;
+
+  for (const token of tokens) {
+    if (danishWords.has(token)) {
+      danishScore += 1;
+    }
+
+    if (englishWords.has(token)) {
+      englishScore += 1;
+    }
+  }
+
+  return danishScore > englishScore ? "da" : "en";
+}
+
+function getSourceDomain(sourceUrl: string): string {
+  try {
+    const hostname = new URL(sourceUrl).hostname.toLowerCase();
+    return hostname.startsWith("www.") ? hostname.slice(4) : hostname;
+  } catch {
+    return sourceUrl;
+  }
 }
 
 function escapeHtml(value: string): string {
