@@ -9,12 +9,19 @@ import {
   getRunRecord,
   markRunRunning,
   persistFailedRun,
+  persistProcessedMoveResult,
   persistSucceededRun,
 } from "./persistence.js";
 import { createBatches, renderBatchHtml } from "./queue.js";
 import { fetchRaindrops, moveProcessedRaindrops } from "./raindrop.js";
 import { AppError } from "./errors.js";
-import type { AppConfig, GenerateQueueResult, PublicConfig, QueueRunRecord } from "./types.js";
+import type {
+  AppConfig,
+  GenerateQueueResult,
+  ProcessedArticleMoveSummary,
+  PublicConfig,
+  QueueRunRecord,
+} from "./types.js";
 
 export async function generateQueue(config: AppConfig): Promise<GenerateQueueResult> {
   const runId = randomUUID();
@@ -73,7 +80,6 @@ async function executeQueueRun(
     ...batch,
     html: renderBatchHtml(batch),
   }));
-  const processed = await moveProcessedRaindrops(extracted, config);
   const totalWords = extracted.reduce((total, article) => total + article.wordCount, 0);
   const result: GenerateQueueResult = {
     runId,
@@ -101,7 +107,7 @@ async function executeQueueRun(
       html: batch.html,
     })),
     skipped,
-    processed,
+    processed: null,
   };
 
   await persistSucceededRun({
@@ -114,6 +120,15 @@ async function executeQueueRun(
     result,
   });
 
+  if (config.processedCollectionId) {
+    const processed = await moveProcessedRaindropsSafely(extracted, config);
+    result.processed = processed;
+
+    if (processed) {
+      await bestEffortPersistProcessedMoveResult(runId, processed);
+    }
+  }
+
   return result;
 }
 
@@ -122,5 +137,42 @@ async function bestEffortPersistFailure(runId: string, error: unknown): Promise<
     await persistFailedRun(runId, error);
   } catch (persistenceError) {
     console.error("Failed to persist run failure", persistenceError);
+  }
+}
+
+async function bestEffortPersistProcessedMoveResult(
+  runId: string,
+  processed: ProcessedArticleMoveSummary,
+): Promise<void> {
+  try {
+    await persistProcessedMoveResult(runId, processed);
+  } catch (persistenceError) {
+    console.error("Failed to persist processed move result", persistenceError);
+  }
+}
+
+async function moveProcessedRaindropsSafely(
+  extracted: Parameters<typeof moveProcessedRaindrops>[0],
+  config: AppConfig,
+): Promise<ProcessedArticleMoveSummary | null> {
+  try {
+    return await moveProcessedRaindrops(extracted, config);
+  } catch (error) {
+    if (!config.processedCollectionId || extracted.length === 0) {
+      return null;
+    }
+
+    return {
+      destinationCollectionId: config.processedCollectionId,
+      attempted: extracted.length,
+      moved: 0,
+      failed: extracted.length,
+      failures: extracted.map((article) => ({
+        id: article.id,
+        title: article.title,
+        sourceCollectionId: article.collectionId,
+        error: error instanceof Error ? error.message : "Unexpected move failure",
+      })),
+    };
   }
 }
