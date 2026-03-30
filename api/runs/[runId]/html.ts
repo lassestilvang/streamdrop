@@ -10,19 +10,16 @@ export async function GET(request: Request): Promise<Response> {
     const runId = parseRunIdFromPath(request.url);
     const batchIndex = readBatchIndex(request.url);
     const requestUrl = new URL(request.url);
+    const session = verifyPublicBatchToken(
+      runId,
+      batchIndex,
+      requestUrl.searchParams.get("expires"),
+      requestUrl.searchParams.get("token"),
+    )
+      ? null
+      : await requireAuth(request);
 
-    if (
-      !verifyPublicBatchToken(
-        runId,
-        batchIndex,
-        requestUrl.searchParams.get("expires"),
-        requestUrl.searchParams.get("token"),
-      )
-    ) {
-      requireAuth(request);
-    }
-
-    const run = await getRunRecord(runId);
+    const run = await getRunRecord(runId, session?.userId);
 
     if (!run) {
       throw new AppError(404, "RUN_NOT_FOUND", "Run not found.");
