@@ -35,3 +35,12 @@
 * [x] Add a production-safe migration workflow. GitHub Actions now runs `npm run db:migrate` on pushes to `main` using the `PRODUCTION_DATABASE_URL` secret.
 * [ ] Add deployment smoke checks and runbooks. Document what to verify after each Vercel deploy and what to do when Raindrop auth, extraction, or quota failures start happening.
 * [ ] Add integration tests that cover real route behavior with mocked upstreams. Verify error mapping, timeout handling, skipped-article behavior, and HTML rendering from the API surface, not just helpers.
+
+## Multi-user Expansion
+
+* [ ] Add first-class user and account tables. Create `users` plus per-user Raindrop account/settings records, then attach `user_id` to runs and related artifacts so all persisted data becomes tenant-aware.
+* [ ] Replace the global single-user auth model with real user sessions. Move from deployment-level credentials to user records, store user identity in the session, and reject cross-user access on every route.
+* [ ] Scope all queue, run, and HTML-link queries by user. Ensure `/api/runs`, `/api/runs/:runId`, `/api/queue/latest`, and signed batch links only operate on the current user's records.
+* [ ] Move queue configuration out of environment variables and into per-user settings. Persist each user's Raindrop token, source collection, processed collection, filters, and batching defaults.
+* [ ] Redesign the dashboard for account ownership. Add signup/login/logout flows, a settings area for connecting Raindrop, per-user collection selection, and user-scoped queue history.
+* [ ] Add multi-tenant operational guardrails. Introduce per-user rate limits, quotas, concurrency caps, isolated background processing, and audit logging for account/configuration changes.
