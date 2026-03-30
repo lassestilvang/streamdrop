@@ -1,6 +1,7 @@
 export interface AppConfig {
   token: string;
   collectionId: number;
+  processedCollectionId: number | null;
   search: string;
   sort: string;
   nested: boolean;
@@ -39,6 +40,7 @@ export interface RaindropItem {
   id: number;
   title: string;
   link: string;
+  collectionId: number;
   created?: string;
   position?: number;
 }
@@ -47,6 +49,7 @@ export interface ExtractedArticle {
   id: number;
   title: string;
   sourceUrl: string;
+  collectionId: number;
   created?: string;
   content: string;
   wordCount: number;
@@ -86,6 +89,21 @@ export interface QueueBatchResult {
   html: string;
 }
 
+export interface ProcessedArticleMoveFailure {
+  id: number;
+  title: string;
+  sourceCollectionId: number | null;
+  error: string;
+}
+
+export interface ProcessedArticleMoveSummary {
+  destinationCollectionId: number;
+  attempted: number;
+  moved: number;
+  failed: number;
+  failures: ProcessedArticleMoveFailure[];
+}
+
 export interface GenerateQueueResult {
   runId: string;
   generatedAt: string;
@@ -100,6 +118,7 @@ export interface GenerateQueueResult {
   };
   batches: QueueBatchResult[];
   skipped: SkippedArticle[];
+  processed: ProcessedArticleMoveSummary | null;
 }
 
 export interface QueueRunRecord {
