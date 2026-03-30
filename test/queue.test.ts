@@ -57,3 +57,86 @@ test("renderBatchHtml escapes article content and titles", () => {
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>/);
 });
+
+test("renderBatchHtml omits spoken queue counts and article reading times", () => {
+  const [batch] = createBatches(
+    [
+      {
+        id: 1,
+        title: "First title",
+        sourceUrl: "https://www.example.com/first",
+        content: "First paragraph.",
+        wordCount: 2,
+        minutes: 1,
+        position: 0,
+      },
+      {
+        id: 2,
+        title: "Second title",
+        sourceUrl: "https://example.org/second",
+        content: "Second paragraph.",
+        wordCount: 2,
+        minutes: 1,
+        position: 1,
+      },
+    ],
+    200,
+  );
+
+  assert.ok(batch);
+
+  const html = renderBatchHtml(batch);
+
+  assert.doesNotMatch(html, /articles,\s*\d[\d,]* words,\s*about/i);
+  assert.doesNotMatch(html, /Estimated reading time:/i);
+  assert.match(html, /<h2>First title<\/h2>/);
+  assert.doesNotMatch(html, /<h2>\s*1\.\s*First title<\/h2>/);
+});
+
+test("renderBatchHtml shows source links as bare domains", () => {
+  const [batch] = createBatches(
+    [
+      {
+        id: 1,
+        title: "Domain test",
+        sourceUrl: "https://www.example.com/path?q=1",
+        content: "Content here.",
+        wordCount: 2,
+        minutes: 1,
+        position: 0,
+      },
+    ],
+    200,
+  );
+
+  assert.ok(batch);
+
+  const html = renderBatchHtml(batch);
+
+  assert.match(html, />example\.com<\/a>/);
+  assert.doesNotMatch(html, />https:\/\/www\.example\.com\/path\?q=1<\/a>/);
+});
+
+test("renderBatchHtml marks Danish batches with lang metadata", () => {
+  const [batch] = createBatches(
+    [
+      {
+        id: 1,
+        title: "Dansk artikel",
+        sourceUrl: "https://example.dk/artikel",
+        content: "Det er en artikel om dansk sprog og kultur.",
+        wordCount: 9,
+        minutes: 1,
+        position: 0,
+      },
+    ],
+    200,
+  );
+
+  assert.ok(batch);
+
+  const html = renderBatchHtml(batch);
+
+  assert.match(html, /<html lang="da">/);
+  assert.match(html, /content="da"/);
+});
