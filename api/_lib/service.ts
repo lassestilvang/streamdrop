@@ -27,7 +27,7 @@ export async function generateQueue(config: AppConfig): Promise<GenerateQueueRes
   const runId = randomUUID();
   const publicConfig = getPublicConfig(config);
 
-  await createRunningRun(runId, publicConfig);
+  await createRunningRun(runId, publicConfig, config.userId);
 
   try {
     const result = await executeQueueRun(runId, config, publicConfig);
@@ -39,27 +39,27 @@ export async function generateQueue(config: AppConfig): Promise<GenerateQueueRes
 }
 
 export async function enqueueQueueRun(config: AppConfig): Promise<QueueRunRecord> {
-  return createQueuedRun(getPublicConfig(config));
+  return createQueuedRun(getPublicConfig(config), config.userId);
 }
 
-export async function processQueuedRun(runId: string): Promise<QueueRunRecord> {
-  const storedConfig = await getRunConfig(runId);
+export async function processQueuedRun(runId: string, userId?: string): Promise<QueueRunRecord> {
+  const storedConfig = await getRunConfig(runId, userId);
 
   if (!storedConfig) {
     throw new AppError(404, "RUN_NOT_FOUND", "Run not found.");
   }
 
-  await markRunRunning(runId);
+  await markRunRunning(runId, userId);
 
   try {
-    const config = restoreConfig(storedConfig);
+    const config = restoreConfig(storedConfig, process.env, userId);
     await executeQueueRun(runId, config, storedConfig);
   } catch (error) {
     await bestEffortPersistFailure(runId, error);
     throw error;
   }
 
-  const run = await getRunRecord(runId);
+  const run = await getRunRecord(runId, userId);
 
   if (!run) {
     throw new AppError(500, "RUN_NOT_FOUND", "Processed run could not be reloaded.");
