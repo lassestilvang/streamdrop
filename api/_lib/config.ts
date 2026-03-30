@@ -47,6 +47,10 @@ export function resolveConfig(requestUrl: string, env: NodeJS.ProcessEnv = proce
       DEFAULTS.collectionId,
       "collectionId",
     ),
+    processedCollectionId: readOptionalPositiveInteger(
+      env.RAINDROP_PROCESSED_COLLECTION_ID,
+      "RAINDROP_PROCESSED_COLLECTION_ID",
+    ),
     search: readString(url.searchParams.get("search"), env.RAINDROP_SEARCH, DEFAULTS.search),
     sort: readSort(url.searchParams.get("sort"), env.RAINDROP_SORT, DEFAULTS.sort),
     nested: readBoolean(url.searchParams.get("nested"), env.RAINDROP_NESTED, DEFAULTS.nested),
@@ -105,6 +109,10 @@ export function restoreConfig(
 
   return finalizeConfig({
     token,
+    processedCollectionId: readOptionalPositiveInteger(
+      env.RAINDROP_PROCESSED_COLLECTION_ID,
+      "RAINDROP_PROCESSED_COLLECTION_ID",
+    ),
     ...publicConfig,
     maxWords: 0,
     perPage: 0,
@@ -177,6 +185,20 @@ function readInteger(
 
   if (!Number.isInteger(parsed)) {
     throw new AppError(400, "INVALID_QUERY", `Invalid integer for ${field}.`);
+  }
+
+  return parsed;
+}
+
+function readOptionalPositiveInteger(value: string | undefined, field: string): number | null {
+  if (value === undefined || value === null || value.trim() === "") {
+    return null;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new AppError(500, "CONFIG_INVALID", `${field} must be a positive integer.`);
   }
 
   return parsed;
