@@ -7,8 +7,8 @@ import { enqueueQueueRun } from "../_lib/service.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
-    const runs = await listRecentRuns(readLimit(request.url));
+    const session = await requireAuth(request);
+    const runs = await listRecentRuns(readLimit(request.url), session.userId);
     return json({ runs });
   } catch (error) {
     return toErrorResponse(error);
@@ -17,8 +17,9 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
+    const session = await requireAuth(request);
     const config = resolveConfig(request.url);
+    config.userId = session.userId;
     const run = await enqueueQueueRun(config);
 
     return json(
