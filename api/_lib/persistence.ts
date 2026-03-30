@@ -33,18 +33,22 @@ const STATUS_RUNNING: QueueRunStatus = "running";
 const STATUS_SUCCEEDED: QueueRunStatus = "succeeded";
 const STATUS_FAILED: QueueRunStatus = "failed";
 
-export async function createQueuedRun(config: PublicConfig): Promise<QueueRunRecord> {
+export async function createQueuedRun(
+  config: PublicConfig,
+  userId?: string,
+): Promise<QueueRunRecord> {
   const db = requireDatabase();
   const id = randomUUID();
 
   await db.insert(queueRuns).values({
     id,
+    userId: userId ?? null,
     status: STATUS_QUEUED,
     configHash: hashConfig(config),
     configJson: config,
   });
 
-  const run = await getRunRecord(id);
+  const run = await getRunRecord(id, userId);
 
   if (!run) {
     throw new AppError(500, "RUN_CREATE_FAILED", "Queued run was not persisted.");
@@ -53,7 +57,11 @@ export async function createQueuedRun(config: PublicConfig): Promise<QueueRunRec
   return run;
 }
 
-export async function createRunningRun(id: string, config: PublicConfig): Promise<void> {
+export async function createRunningRun(
+  id: string,
+  config: PublicConfig,
+  userId?: string,
+): Promise<void> {
   const db = getDatabase();
 
   if (!db) {
@@ -64,6 +72,7 @@ export async function createRunningRun(id: string, config: PublicConfig): Promis
 
   await db.insert(queueRuns).values({
     id,
+    userId: userId ?? null,
     status: STATUS_RUNNING,
     startedAt: now,
     configHash: hashConfig(config),
@@ -71,7 +80,7 @@ export async function createRunningRun(id: string, config: PublicConfig): Promis
   });
 }
 
-export async function markRunRunning(runId: string): Promise<void> {
+export async function markRunRunning(runId: string, userId?: string): Promise<void> {
   const db = requireDatabase();
   const [run] = await db
     .select({
@@ -79,7 +88,7 @@ export async function markRunRunning(runId: string): Promise<void> {
       status: queueRuns.status,
     })
     .from(queueRuns)
-    .where(eq(queueRuns.id, runId))
+    .where(and(eq(queueRuns.id, runId), withOptionalUserScope(userId)))
     .limit(1);
 
   if (!run) {
@@ -251,32 +260,46 @@ export async function persistProcessedMoveResult(
     .where(eq(queueRuns.id, runId));
 }
 
-export async function getRunRecord(runId: string): Promise<QueueRunRecord | null> {
+export async function getRunRecord(runId: string, userId?: string): Promise<QueueRunRecord | null> {
   const db = requireDatabase();
   const [row] = await db
     .select()
     .from(queueRuns)
-    .where(eq(queueRuns.id, runId))
+    .where(and(eq(queueRuns.id, runId), withOptionalUserScope(userId)))
     .limit(1);
 
   return row ? mapRunRecord(row, true) : null;
 }
 
-export async function getLatestSucceededRun(config: PublicConfig): Promise<QueueRunRecord | null> {
+export async function getLatestSucceededRun(
+  config: PublicConfig,
+  userId?: string,
+): Promise<QueueRunRecord | null> {
   const db = requireDatabase();
   const [row] = await db
     .select()
     .from(queueRuns)
-    .where(and(eq(queueRuns.configHash, hashConfig(config)), eq(queueRuns.status, STATUS_SUCCEEDED)))
+    .where(
+      and(
+        eq(queueRuns.configHash, hashConfig(config)),
+        eq(queueRuns.status, STATUS_SUCCEEDED),
+        withOptionalUserScope(userId),
+      ),
+    )
     .orderBy(desc(queueRuns.createdAt))
     .limit(1);
 
   return row ? mapRunRecord(row, true) : null;
 }
 
-export async function listRecentRuns(limit: number): Promise<QueueRunSummaryRecord[]> {
+export async function listRecentRuns(limit: number, userId?: string): Promise<QueueRunSummaryRecord[]> {
   const db = requireDatabase();
-  const rows = await db.select().from(queueRuns).orderBy(desc(queueRuns.createdAt)).limit(limit);
+  const rows = await db
+    .select()
+    .from(queueRuns)
+    .where(withOptionalUserScope(userId))
+    .orderBy(desc(queueRuns.createdAt))
+    .limit(limit);
 
   return rows.map((row) => mapRunRecord(row, false));
 }
@@ -297,8 +320,9 @@ export async function getRunBatchHtml(runId: string, batchIndex: number): Promis
 export async function getLatestSucceededBatchHtml(
   config: PublicConfig,
   batchIndex: number,
+  userId?: string,
 ): Promise<{ runId: string; html: string } | null> {
-  const run = await getLatestSucceededRun(config);
+  const run = await getLatestSucceededRun(config, userId);
 
   if (!run) {
     return null;
@@ -316,14 +340,14 @@ export async function getLatestSucceededBatchHtml(
   };
 }
 
-export async function getRunConfig(runId: string): Promise<PublicConfig | null> {
+export async function getRunConfig(runId: string, userId?: string): Promise<PublicConfig | null> {
   const db = requireDatabase();
   const [row] = await db
     .select({
       configJson: queueRuns.configJson,
     })
     .from(queueRuns)
-    .where(eq(queueRuns.id, runId))
+    .where(and(eq(queueRuns.id, runId), withOptionalUserScope(userId)))
     .limit(1);
 
   return row?.configJson ?? null;
@@ -419,6 +443,10 @@ function requireDatabase() {
   }
 
   return db;
+}
+
+function withOptionalUserScope(userId?: string) {
+  return userId ? eq(queueRuns.userId, userId) : undefined;
 }
 
 function hashConfig(config: PublicConfig): string {
