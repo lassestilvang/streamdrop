@@ -7,6 +7,7 @@ import { queueRunArticles, queueRunBatches, queueRunSkips, queueRuns } from "../
 import { AppError, isAppError } from "./errors.js";
 import type {
   GenerateQueueResult,
+  ProcessedArticleMoveSummary,
   PublicConfig,
   QueueBatch,
   QueueRunError,
@@ -213,6 +214,39 @@ export async function persistFailedRun(runId: string, error: unknown): Promise<v
       batchCount: null,
       wordCount: null,
       estimatedMinutes: null,
+    })
+    .where(eq(queueRuns.id, runId));
+}
+
+export async function persistProcessedMoveResult(
+  runId: string,
+  processed: ProcessedArticleMoveSummary,
+): Promise<void> {
+  const db = getDatabase();
+
+  if (!db) {
+    return;
+  }
+
+  const [row] = await db
+    .select({
+      resultJson: queueRuns.resultJson,
+    })
+    .from(queueRuns)
+    .where(eq(queueRuns.id, runId))
+    .limit(1);
+
+  if (!row?.resultJson) {
+    throw new AppError(404, "RUN_NOT_FOUND", "Run result was not available for processed move persistence.");
+  }
+
+  await db
+    .update(queueRuns)
+    .set({
+      resultJson: {
+        ...row.resultJson,
+        processed,
+      },
     })
     .where(eq(queueRuns.id, runId));
 }
