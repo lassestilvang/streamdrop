@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createBatches, renderBatchHtml } from "../api/_lib/queue.js";
+import { createBatches, normalizeStoredBatchHtml, renderBatchHtml } from "../api/_lib/queue.js";
 
 test("createBatches does not emit empty batches for oversized articles", () => {
   const batches = createBatches(
@@ -139,4 +139,45 @@ test("renderBatchHtml marks Danish batches with lang metadata", () => {
 
   assert.match(html, /<html lang="da">/);
   assert.match(html, /content="da"/);
+});
+
+test("normalizeStoredBatchHtml rewrites legacy batch markup for ElevenReader", () => {
+  const legacyHtml = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Listening Queue 1</title>
+  </head>
+  <body>
+    <header>
+      <h1>Listening Queue 1</h1>
+      <p class="summary">
+        1 article,
+        700 words,
+        about 4 min.
+      </p>
+    </header>
+    <section class="article">
+      <div class="separator">Next article</div>
+      <h2>1. Dansk titel</h2>
+      <p class="meta">
+        Estimated reading time: 4 min
+        <br />
+        Source: <a href="https://www.dr.dk/nyheder/test">https://www.dr.dk/nyheder/test</a>
+      </p>
+      <p>Det er en artikel om dansk kultur og fællesskab.</p>
+    </section>
+  </body>
+</html>`;
+
+  const html = normalizeStoredBatchHtml(legacyHtml);
+
+  assert.match(html, /<html lang="da">/);
+  assert.match(html, /content="da"/);
+  assert.doesNotMatch(html, /about 4 min\./i);
+  assert.doesNotMatch(html, /Estimated reading time:/i);
+  assert.match(html, /<h2>Dansk titel<\/h2>/);
+  assert.match(html, />dr\.dk<\/a>/);
+  assert.doesNotMatch(html, />https:\/\/www\.dr\.dk\/nyheder\/test<\/a>/);
 });
