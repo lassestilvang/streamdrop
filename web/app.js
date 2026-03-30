@@ -535,6 +535,12 @@ function renderHistoryDiagnostics(run, detailedRun, comparison, isExpanded) {
           : "No skipped articles in this run.",
       )}</p>`,
     );
+
+    if (detailRun.result.processed) {
+      diagnostics.push(
+        `<p><strong>Processed move:</strong> ${escapeHtml(describeProcessedMove(detailRun.result.processed))}</p>`,
+      );
+    }
   } else {
     diagnostics.push(
       `<p><strong>Status:</strong> ${escapeHtml(detailRun.status)}. This run does not have stored output yet.</p>`,
@@ -894,6 +900,14 @@ function describeBatchMix(result) {
 
   const longestBatch = [...result.batches].sort((left, right) => right.wordCount - left.wordCount)[0];
   return `${result.batches.length} batches, averaging ${Math.round(result.totals.estimatedMinutes / result.totals.batches)} minutes. Largest batch: ${longestBatch.articleCount} articles and ${longestBatch.estimatedMinutes} minutes.`;
+}
+
+function describeProcessedMove(processed) {
+  if (processed.failed > 0) {
+    return `${processed.moved}/${processed.attempted} articles moved to collection ${processed.destinationCollectionId}. ${processed.failed} move failures remain.`;
+  }
+
+  return `${processed.moved}/${processed.attempted} articles moved to collection ${processed.destinationCollectionId}.`;
 }
 
 function compactValue(value) {
