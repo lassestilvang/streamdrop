@@ -38,9 +38,44 @@
 
 ## Multi-user Expansion
 
-* [ ] Add first-class user and account tables. Create `users` plus per-user Raindrop account/settings records, then attach `user_id` to runs and related artifacts so all persisted data becomes tenant-aware.
+### Phase 1: Tenancy Foundation
+
+* [ ] Add first-class user tables. Create `users`, `sessions`, and per-user Raindrop account/settings tables so identity and external-account ownership live in the database instead of env vars.
+* [ ] Add tenant ownership to persisted run data. Attach `user_id` to `queue_runs` and decide whether related tables inherit ownership by join-through-run or store `user_id` directly for simpler policy enforcement.
 * [ ] Replace the global single-user auth model with real user sessions. Move from deployment-level credentials to user records, store user identity in the session, and reject cross-user access on every route.
-* [ ] Scope all queue, run, and HTML-link queries by user. Ensure `/api/runs`, `/api/runs/:runId`, `/api/queue/latest`, and signed batch links only operate on the current user's records.
+* [ ] Scope all queue, run, and HTML-link queries by user. Ensure `/api/runs`, `/api/runs/:runId`, `/api/queue/latest`, `/api/queue/latest/html`, and signed batch links only operate on the current user's records.
 * [ ] Move queue configuration out of environment variables and into per-user settings. Persist each user's Raindrop token, source collection, processed collection, filters, and batching defaults.
+* [ ] Add tenant-aware migrations for existing data. Define how the current single-user data maps into the first created user/admin account and make the migration reversible enough for development rollback.
+
+### Phase 2: User Product Surface
+
 * [ ] Redesign the dashboard for account ownership. Add signup/login/logout flows, a settings area for connecting Raindrop, per-user collection selection, and user-scoped queue history.
-* [ ] Add multi-tenant operational guardrails. Introduce per-user rate limits, quotas, concurrency caps, isolated background processing, and audit logging for account/configuration changes.
+* [ ] Add first-run onboarding for new users. Guide them through account creation, Raindrop connection, source collection setup, processed collection setup, and the first successful queue run.
+* [ ] Add account recovery flows. Support password reset or magic-link email login so the app is usable without direct database or environment access.
+* [ ] Add user-visible connection health and setup validation. Show when a Raindrop token is missing, invalid, expired, or misconfigured before the user tries to run extraction.
+* [ ] Add per-user queue settings management. Let each user edit batching defaults, filters, reading-speed assumptions, and processed-collection behavior from the UI.
+* [ ] Add user-scoped history and diagnostics views. Ensure comparison, rerun, skip diagnostics, and processed-move diagnostics only surface the current user's data.
+
+### Phase 3: Production Hardening
+
+* [ ] Add multi-tenant operational guardrails. Introduce per-user rate limits, quotas, concurrency caps, and isolated background processing so one user cannot starve the whole service.
+* [ ] Encrypt or otherwise protect stored Raindrop credentials. Define how tokens are encrypted at rest, rotated, and masked in logs or admin tooling.
+* [ ] Add audit logging for security-sensitive changes. Record account creation, login events, Raindrop credential updates, settings changes, and processed-move failures with user attribution.
+* [ ] Add integration tests for tenant isolation. Verify that one user cannot read, rerun, compare, or fetch signed HTML for another user's runs or settings.
+* [ ] Add production-ready session and security controls. Define password hashing, session invalidation, secure cookie policy, CSRF posture, and optional email verification requirements.
+* [ ] Add observability with tenant context. Capture structured logs, job failures, request spikes, and auth errors with user/account identifiers that are safe for operations use.
+* [ ] Add an admin/support surface. Decide whether you need a lightweight admin role for diagnosing user issues without granting direct database access.
+
+### Phase 4: Durable Job Execution
+
+* [ ] Make background processing explicitly tenant-aware. Ensure queued runs, scheduled jobs, and retry flows always run in the context of the correct user and Raindrop account.
+* [ ] Add idempotent per-user job handling. Prevent duplicate queue generation, duplicate processed-item moves, and inconsistent retries when users refresh or retry aggressively.
+* [ ] Add per-user scheduling. Let each user opt into automatic generation with their own cadence, source filters, and delivery preferences.
+* [ ] Add queue ownership and retention policies. Decide how long user runs, HTML payloads, and diagnostics are retained and how deletion/export requests should behave.
+
+### Phase 5: Operability And Trust
+
+* [ ] Add user-facing account deletion/export flows. Define what happens to stored runs, signed links, and connected Raindrop credentials when a user leaves.
+* [ ] Add disaster-recovery and rollback procedures for shared production. Document how to recover from bad migrations, auth outages, token corruption, or broken background jobs in a multi-user environment.
+* [ ] Add staged rollout controls for major changes. Introduce feature flags or release gating so risky auth, settings, or queue-processing changes do not hit every user at once.
+* [ ] Add support documentation and runbooks for a hosted shared app. Cover onboarding failures, token issues, queue failures, processed-move issues, and user-isolation incidents.
