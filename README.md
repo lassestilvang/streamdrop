@@ -21,7 +21,7 @@ Streamdrop flips that:
 ## 🚀 How It Works
 
 ```
-Raindrop → Fetch → Extract → Clean → Batch → HTML → ElevenReader
+Raindrop → Fetch → Extract → Clean → Batch → Persist → Move processed items → ElevenReader
 ```
 
 1. Fetch unread articles from Raindrop API
@@ -29,13 +29,16 @@ Raindrop → Fetch → Extract → Clean → Batch → HTML → ElevenReader
 3. Estimate reading time
 4. Batch into ~30–60 min chunks
 5. Generate a structured HTML document
-6. Paste into ElevenReader → listen 🎧
+6. Persist the successful run
+7. Optionally move processed source articles into a dedicated Raindrop collection
+8. Paste into ElevenReader → listen 🎧
 
 ## 📦 Features
 
 * 📚 Fetch articles from Raindrop
 * 🧹 Clean extraction (no ads, nav, clutter)
 * ⏱️ Smart batching based on reading time
+* 📦 Optional post-run archive move into a processed Raindrop collection
 * 🎧 Optimized for TTS (clear separators, structure)
 * ⚡ Serverless (deploy on Vercel)
 * 💸 Zero ongoing cost (uses ElevenReader free tier)
@@ -149,6 +152,7 @@ Optional:
 - `HTML_LINK_SIGNING_SECRET`: server-only secret used to sign public batch HTML links.
 - `HTML_LINK_TTL_SECONDS`: expiry window for public batch HTML links. Default `2592000` (30 days).
 - `RAINDROP_COLLECTION_ID`: collection to read from. Default `0` for all collections except trash.
+- `RAINDROP_PROCESSED_COLLECTION_ID`: destination collection that successful runs move processed source articles into. Unset by default.
 - `RAINDROP_SEARCH`: Raindrop search filter.
 - `MAX_MINUTES`: target duration per output batch. Default `45`.
 - `WORDS_PER_MINUTE`: reading speed estimate. Default `180`.
@@ -187,6 +191,7 @@ Open `/` to use the dashboard. It adds:
 - Public signed batch HTML links for ElevenReader or other unauthenticated consumers.
 - Skipped-article inspection.
 - Recent run history and operator stats such as extraction rate, success streak, and skip pressure.
+- History actions to load a stored run, rerun a saved configuration, compare runs, and inspect move/skip diagnostics.
 
 If you do not override the auth settings, the default login is:
 
@@ -235,6 +240,7 @@ Schema changes:
 - `totals`
 - `batches`
 - `skipped`
+- `processed`
 
 Each batch includes metadata plus an `html` field that can be pasted directly into ElevenReader.
 
@@ -267,6 +273,7 @@ Current limitation:
 - The service uses bounded upstream timeouts and per-document size caps to stay within Vercel’s request model.
 - It escapes rendered HTML, so article titles and body text do not become executable markup in the output.
 - Article-level extraction failures are reported in `skipped` instead of failing the whole queue.
+- When `RAINDROP_PROCESSED_COLLECTION_ID` is configured, successful runs also attempt to move extracted source items into that collection and persist a move summary in `processed`.
 - Whole-run failures are persisted to Postgres with status and structured error details.
 - Successful runs are persisted to Postgres with per-batch, per-article, and skip metadata for later retrieval.
 - `/api/health` reports whether configuration is valid without exposing secrets.
