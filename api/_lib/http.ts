@@ -68,14 +68,32 @@ export function toErrorResponse(error: unknown): Response {
 
 export async function fetchJson<T>(
   url: string,
-  { timeoutMs, headers = {} }: { timeoutMs: number; headers?: HeadersInit },
+  {
+    timeoutMs,
+    headers = {},
+    method = "GET",
+    body,
+  }: {
+    timeoutMs: number;
+    headers?: HeadersInit;
+    method?: string;
+    body?: unknown;
+  },
 ): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const requestHeaders = new Headers(headers);
+
+    if (body !== undefined && !requestHeaders.has("content-type")) {
+      requestHeaders.set("content-type", "application/json; charset=utf-8");
+    }
+
     const response = await fetch(url, {
-      headers,
+      method,
+      headers: requestHeaders,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       signal: controller.signal,
     });
 
