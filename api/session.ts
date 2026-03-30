@@ -1,14 +1,15 @@
 import {
   clearSessionCookie,
   createSessionCookie,
+  destroySession,
   getSession,
   validateCredentials,
 } from "./_lib/auth.js";
 import { AppError } from "./_lib/errors.js";
 import { json, methodNotAllowed, toErrorResponse } from "./_lib/http.js";
 
-export function GET(request: Request): Response {
-  return json(getSession(request));
+export async function GET(request: Request): Promise<Response> {
+  return json(await getSession(request));
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -24,18 +25,21 @@ export async function POST(request: Request): Promise<Response> {
       throw new AppError(400, "INVALID_LOGIN", "Username and password are required.");
     }
 
-    if (!validateCredentials(username, password)) {
+    const session = await validateCredentials(username, password);
+
+    if (!session) {
       throw new AppError(401, "INVALID_LOGIN", "Invalid username or password.");
     }
 
     return json(
       {
         authenticated: true,
-        username,
+        userId: session.userId,
+        username: session.username,
       },
       {
         headers: {
-          "set-cookie": createSessionCookie(),
+          "set-cookie": await createSessionCookie(session),
         },
       },
     );
@@ -44,7 +48,9 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
-export function DELETE(): Response {
+export async function DELETE(request: Request): Promise<Response> {
+  await destroySession(request);
+
   return new Response(null, {
     status: 204,
     headers: {
@@ -65,7 +71,7 @@ const handler = {
     }
 
     if (request.method === "DELETE") {
-      return DELETE();
+      return DELETE(request);
     }
 
     return methodNotAllowed(["GET", "POST", "DELETE"]);
