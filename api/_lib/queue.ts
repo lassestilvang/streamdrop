@@ -1,3 +1,5 @@
+import { JSDOM } from "jsdom";
+
 import type { ExtractedArticle, QueueBatch } from "./types.js";
 
 export function createBatches(
@@ -112,6 +114,35 @@ export function renderBatchHtml(batch: QueueBatch): string {
 </html>`;
 }
 
+export function normalizeStoredBatchHtml(html: string): string {
+  const dom = new JSDOM(html);
+  const { document } = dom.window;
+  const language = detectLanguage(document.body.textContent ?? "");
+
+  document.documentElement.lang = language;
+  upsertContentLanguageMeta(document, language);
+  document.querySelector("header .summary")?.remove();
+
+  for (const heading of document.querySelectorAll("section.article h2")) {
+    heading.textContent = (heading.textContent ?? "").replace(/^\s*\d+\.\s*/, "");
+  }
+
+  for (const meta of document.querySelectorAll("section.article .meta")) {
+    const anchor = meta.querySelector("a");
+
+    if (!anchor) {
+      meta.textContent = "";
+      continue;
+    }
+
+    const sourceUrl = anchor.getAttribute("href") || anchor.textContent || "";
+    anchor.textContent = getSourceDomain(sourceUrl);
+    meta.replaceChildren(document.createTextNode("Source: "), anchor);
+  }
+
+  return dom.serialize();
+}
+
 function finalizeBatch(
   articles: ExtractedArticle[],
   wordsPerMinute: number,
@@ -133,16 +164,19 @@ function finalizeBatch(
 }
 
 function detectBatchLanguage(batch: QueueBatch): "da" | "en" {
-  const sample = batch.articles
-    .map((article) => `${article.title}\n${article.content}`)
-    .join("\n")
-    .toLowerCase();
+  return detectLanguage(
+    batch.articles.map((article) => `${article.title}\n${article.content}`).join("\n"),
+  );
+}
 
-  if (/[æøå]/.test(sample)) {
+function detectLanguage(sample: string): "da" | "en" {
+  const normalizedSample = sample.toLowerCase();
+
+  if (/[æøå]/.test(normalizedSample)) {
     return "da";
   }
 
-  const tokens = sample.match(/\p{L}+/gu) ?? [];
+  const tokens = normalizedSample.match(/\p{L}+/gu) ?? [];
   const danishWords = new Set([
     "af",
     "at",
@@ -197,6 +231,19 @@ function detectBatchLanguage(batch: QueueBatch): "da" | "en" {
   }
 
   return danishScore > englishScore ? "da" : "en";
+}
+
+function upsertContentLanguageMeta(document: Document, language: "da" | "en"): void {
+  const existing =
+    document.querySelector('meta[http-equiv="content-language"]') ||
+    document.createElement("meta");
+
+  existing.setAttribute("http-equiv", "content-language");
+  existing.setAttribute("content", language);
+
+  if (!existing.parentElement) {
+    document.head.append(existing);
+  }
 }
 
 function getSourceDomain(sourceUrl: string): string {
