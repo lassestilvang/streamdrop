@@ -12,7 +12,7 @@ import {
   persistSucceededRun,
 } from "./persistence.js";
 import { createBatches, renderBatchHtml } from "./queue.js";
-import { fetchRaindrops } from "./raindrop.js";
+import { fetchRaindrops, moveProcessedRaindrops } from "./raindrop.js";
 import { AppError } from "./errors.js";
 import type { AppConfig, GenerateQueueResult, PublicConfig, QueueRunRecord } from "./types.js";
 
@@ -73,6 +73,7 @@ async function executeQueueRun(
     ...batch,
     html: renderBatchHtml(batch),
   }));
+  const processed = await moveProcessedRaindrops(extracted, config);
   const totalWords = extracted.reduce((total, article) => total + article.wordCount, 0);
   const result: GenerateQueueResult = {
     runId,
@@ -100,6 +101,7 @@ async function executeQueueRun(
       html: batch.html,
     })),
     skipped,
+    processed,
   };
 
   await persistSucceededRun({
