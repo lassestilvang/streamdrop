@@ -2,9 +2,9 @@ import { requireAuth } from "./_lib/auth.js";
 import { getPublicConfig, resolveConfig } from "./_lib/config.js";
 import { json, methodNotAllowed, toErrorResponse } from "./_lib/http.js";
 
-export function GET(request: Request): Response {
+export async function GET(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
+    await requireAuth(request);
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -60,7 +60,7 @@ export function GET(request: Request): Response {
 }
 
 const handler = {
-  fetch(request: Request): Response {
+  fetch(request: Request): Promise<Response> | Response {
     if (request.method === "GET") {
       return GET(request);
     }
