@@ -14,7 +14,7 @@
 * [ ] “Smart batching” (detect complexity, adjust pacing). Replace pure word-count batching with a configurable heuristic that considers article difficulty, density, source type, and language grouping.
 * [ ] Direct ElevenReader integration (if API becomes available). Track API availability and design the integration so local HTML export remains a fallback path.
 * [ ] Add dashboard presets and an advanced-controls drawer. Keep the common queue flow simple while still allowing per-run tuning for operator use.
-* [ ] Make run history actionable. Support loading a previous run, rerunning with the same config, comparing results, and surfacing deeper failure/skip diagnostics.
+* [x] Make run history actionable. The dashboard now supports loading a previous run, rerunning with the same config, comparing runs, and surfacing deeper failure/skip/move diagnostics.
 * [ ] Improve onboarding and empty states. Turn missing configuration, missing stored queues, and first-run states into a guided setup flow with clear next actions.
 
 ## Deployment and Security
