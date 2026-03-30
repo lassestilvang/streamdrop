@@ -94,6 +94,7 @@ async function extractArticle(item: RaindropItem, config: AppConfig): Promise<Ex
         id: item.id,
         title: article.title?.trim() || item.title,
         sourceUrl: item.link,
+        collectionId: item.collectionId,
         ...(item.created ? { created: item.created } : {}),
         content,
         wordCount,
