@@ -7,10 +7,10 @@ import { parseRunIdFromPath, readBatchIndex } from "../../_lib/routes.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
+    const session = await requireAuth(request);
     const runId = parseRunIdFromPath(request.url);
     const batchIndex = readBatchIndex(request.url);
-    const run = await getRunRecord(runId);
+    const run = await getRunRecord(runId, session.userId);
 
     if (!run) {
       throw new AppError(404, "RUN_NOT_FOUND", "Run not found.");
