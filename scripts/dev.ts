@@ -12,6 +12,7 @@ import runHtmlHandler from "../api/runs/[runId]/html.js";
 import runHtmlLinkHandler from "../api/runs/[runId]/html-link.js";
 import runProcessHandler from "../api/runs/[runId]/process.js";
 import sessionHandler from "../api/session.js";
+import usersHandler from "../api/users.js";
 
 loadLocalEnv();
 
@@ -76,6 +77,10 @@ async function routeRequest(request: Request): Promise<Response> {
 
   if (url.pathname === "/api/session") {
     return sessionHandler.fetch(request);
+  }
+
+  if (url.pathname === "/api/users") {
+    return usersHandler.fetch(request);
   }
 
   if (url.pathname === "/api/queue/latest") {
