@@ -6,10 +6,14 @@ import { readBatchIndex } from "../../_lib/routes.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
+    const session = await requireAuth(request);
     const config = resolveConfig(request.url);
     const batchIndex = readBatchIndex(request.url);
-    const batch = await getLatestSucceededBatchHtml(getPublicConfig(config), batchIndex);
+    const batch = await getLatestSucceededBatchHtml(
+      getPublicConfig(config),
+      batchIndex,
+      session.userId,
+    );
 
     if (!batch) {
       return new Response(
