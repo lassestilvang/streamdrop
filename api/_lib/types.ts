@@ -1,4 +1,5 @@
 export interface AppConfig {
+  userId?: string;
   token: string;
   collectionId: number;
   processedCollectionId: number | null;
