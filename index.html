@@ -65,7 +65,14 @@
               required
             />
           </label>
-          <button class="primary-button" type="submit">Unlock dashboard</button>
+          <div class="history-actions">
+            <button class="primary-button" type="submit" name="authAction" value="login">
+              Unlock dashboard
+            </button>
+            <button class="ghost-button" type="submit" name="authAction" value="signup">
+              Create account
+            </button>
+          </div>
           <p id="loginError" class="error-text"></p>
         </form>
       </section>
