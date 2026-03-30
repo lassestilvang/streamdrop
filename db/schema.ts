@@ -1,5 +1,6 @@
 import {
   bigint,
+  boolean,
   index,
   integer,
   jsonb,
@@ -7,6 +8,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import type {
@@ -16,10 +18,66 @@ import type {
   QueueRunStatus,
 } from "../api/_lib/types.js";
 
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    username: text("username").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    role: text("role").notNull().default("member"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("users_username_idx").on(table.username)],
+);
+
+export const userSessions = pgTable(
+  "user_sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("user_sessions_token_hash_idx").on(table.tokenHash),
+    index("user_sessions_user_id_idx").on(table.userId),
+    index("user_sessions_expires_at_idx").on(table.expiresAt),
+  ],
+);
+
+export const userSettings = pgTable(
+  "user_settings",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    raindropToken: text("raindrop_token"),
+    collectionId: integer("collection_id").notNull().default(0),
+    processedCollectionId: integer("processed_collection_id"),
+    search: text("search").notNull().default(""),
+    sort: text("sort").notNull().default("-created"),
+    nested: boolean("nested").notNull().default(true),
+    maxArticles: integer("max_articles").notNull().default(20),
+    maxMinutes: integer("max_minutes").notNull().default(45),
+    wordsPerMinute: integer("words_per_minute").notNull().default(180),
+    extractionConcurrency: integer("extraction_concurrency").notNull().default(4),
+    fetchTimeoutMs: integer("fetch_timeout_ms").notNull().default(12000),
+    maxHtmlBytes: integer("max_html_bytes").notNull().default(750000),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("user_settings_collection_id_idx").on(table.collectionId)],
+);
+
 export const queueRuns = pgTable(
   "queue_runs",
   {
     id: text("id").primaryKey(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
     status: text("status").$type<QueueRunStatus>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
@@ -39,6 +97,7 @@ export const queueRuns = pgTable(
   },
   (table) => [
     index("queue_runs_created_at_idx").on(table.createdAt),
+    index("queue_runs_user_id_idx").on(table.userId),
     index("queue_runs_config_hash_idx").on(table.configHash),
     index("queue_runs_source_signature_idx").on(table.sourceSignature),
     index("queue_runs_status_idx").on(table.status),
