@@ -5,8 +5,9 @@ import { generateQueue } from "./_lib/service.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
+    const session = await requireAuth(request);
     const config = resolveConfig(request.url);
+    config.userId = session.userId;
     const payload = await generateQueue(config);
     return json(payload);
   } catch (error) {
