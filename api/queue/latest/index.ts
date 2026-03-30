@@ -5,9 +5,9 @@ import { json, methodNotAllowed, toErrorResponse } from "../../_lib/http.js";
 
 export async function GET(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
+    const session = await requireAuth(request);
     const config = resolveConfig(request.url);
-    const run = await getLatestSucceededRun(getPublicConfig(config));
+    const run = await getLatestSucceededRun(getPublicConfig(config), session.userId);
 
     if (!run || !run.result) {
       return json(
