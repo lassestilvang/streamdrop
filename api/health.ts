@@ -13,6 +13,7 @@ export function GET(request: Request): Response {
     | {
       ok: true;
       databaseConfigured: boolean;
+      processedCollectionConfigured: boolean;
       collectionId: number;
       search: string;
       sort: string;
@@ -36,6 +37,7 @@ export function GET(request: Request): Response {
     configuration = {
       ok: true,
       databaseConfigured: Boolean(process.env.DATABASE_URL),
+      processedCollectionConfigured: Boolean(config.processedCollectionId),
       ...defaults,
     };
   } catch (error) {
