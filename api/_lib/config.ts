@@ -104,11 +104,13 @@ export function resolveConfig(requestUrl: string, env: NodeJS.ProcessEnv = proce
 export function restoreConfig(
   publicConfig: PublicConfig,
   env: NodeJS.ProcessEnv = process.env,
+  userId?: string,
 ): AppConfig {
   const token = readRequiredString(env.RAINDROP_TOKEN, "RAINDROP_TOKEN");
 
   return finalizeConfig({
     token,
+    ...(userId ? { userId } : {}),
     processedCollectionId: readOptionalPositiveInteger(
       env.RAINDROP_PROCESSED_COLLECTION_ID,
       "RAINDROP_PROCESSED_COLLECTION_ID",
