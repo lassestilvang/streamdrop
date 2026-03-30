@@ -5,9 +5,9 @@ import { processQueuedRun } from "../../_lib/service.js";
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    requireAuth(request);
+    const session = await requireAuth(request);
     const runId = parseRunIdFromPath(request.url);
-    const run = await processQueuedRun(runId);
+    const run = await processQueuedRun(runId, session.userId);
     return json({ run });
   } catch (error) {
     return toErrorResponse(error);
