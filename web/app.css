@@ -360,6 +360,66 @@ select:focus {
   margin-top: 14px;
 }
 
+.history-actions,
+.history-diagnostics,
+.delta-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-actions {
+  margin-top: 14px;
+}
+
+.history-diagnostics {
+  margin-top: 14px;
+}
+
+.delta-list {
+  margin-top: 10px;
+}
+
+.detail-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 0.84rem;
+}
+
+.history-card.active {
+  border-color: rgba(146, 215, 212, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(146, 215, 212, 0.3);
+}
+
+.history-card.compare-target {
+  border-color: rgba(244, 163, 64, 0.55);
+}
+
+.history-detail {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.history-detail p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.history-detail p + p {
+  margin-top: 10px;
+}
+
+.history-detail strong {
+  display: inline;
+  margin: 0;
+}
+
 .batch-summary,
 .history-summary,
 .skip-card p,
