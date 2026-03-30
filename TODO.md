@@ -10,9 +10,12 @@
 * [ ] Multi-language support. Decide whether this means language-aware extraction, different reading-speed defaults, translated UI text, or generated summaries in multiple languages.
 * [x] Web UI (view + copy queue easily). A single-user dashboard now lives at `/`, with signed-cookie auth, queue generation controls, stored-queue loading, batch preview/copy actions, skipped-article inspection, and recent run stats.
 * [ ] One-tap iPhone Shortcut integration (one tap to fetch latest queue and open in ElevenReader). Specify the response format and shortcut flow so this works without manual HTML copy/paste.
-* [ ] Deduplication + scoring. Prevent repeated articles across runs and define how freshness, length, source quality, tags, or favorites affect queue priority.
-* [ ] “Smart batching” (detect complexity, adjust pacing). Replace pure word-count batching with a configurable heuristic that considers article difficulty, density, or source type.
+* [ ] Deduplication + scoring. Prevent repeated articles across runs and define how freshness, length, source quality, tags, favorites, and source diversity affect queue priority.
+* [ ] “Smart batching” (detect complexity, adjust pacing). Replace pure word-count batching with a configurable heuristic that considers article difficulty, density, source type, and language grouping.
 * [ ] Direct ElevenReader integration (if API becomes available). Track API availability and design the integration so local HTML export remains a fallback path.
+* [ ] Add dashboard presets and an advanced-controls drawer. Keep the common queue flow simple while still allowing per-run tuning for operator use.
+* [ ] Make run history actionable. Support loading a previous run, rerunning with the same config, comparing results, and surfacing deeper failure/skip diagnostics.
+* [ ] Improve onboarding and empty states. Turn missing configuration, missing stored queues, and first-run states into a guided setup flow with clear next actions.
 
 ## Deployment and Security
 
@@ -20,11 +23,13 @@
 * [x] Protect the public API before exposing it on Vercel. The queue, run, and health endpoints now require a single-user session created via `/api/session`, matching the authenticated web UI.
 * [ ] Add rate limiting and abuse controls. Prevent repeated expensive extraction requests from exhausting Vercel execution time or upstream bandwidth.
 * [ ] Add request/response guardrails for production traffic. Define max request frequency, acceptable query overrides, and safe defaults for expensive knobs like `maxArticles` and `concurrency`.
+* [ ] Tighten authentication defaults for production. Fail closed when `APP_USERNAME`, `APP_PASSWORD`, or `SESSION_SECRET` are missing instead of falling back to development-safe defaults.
+* [ ] Harden public HTML link signing. Require a dedicated signing secret in production, shorten default TTLs, and document the intended exposure model for batch links.
 
 ## Reliability and Operations
 
 * [x] Add persistent storage for generated queues and run history. Successful queue generations are now persisted in Postgres with run, batch, article, and skip records so previous outputs can be inspected and reused without re-fetching upstream content.
-* [ ] Add automatic background generation for larger queues. The run lifecycle and queue/process endpoints now exist, but queued runs still need an explicit processor call instead of a dedicated worker or scheduled drain.
+* [ ] Simplify the run execution model. Either move queued runs onto a real background worker/scheduled drain or collapse the current queue/process split into a single synchronous generate flow.
 * [x] Define the async run lifecycle and API contract. Runs now persist `queued`, `running`, `succeeded`, and `failed` states with polling and retrieval endpoints, plus structured failure records for retry/debugging.
 * [ ] Add observability and alerting. Capture structured logs, extraction failure rates, upstream timeout rates, and deployment/runtime errors.
 * [x] Add a production-safe migration workflow. GitHub Actions now runs `npm run db:migrate` on pushes to `main` using the `PRODUCTION_DATABASE_URL` secret.
