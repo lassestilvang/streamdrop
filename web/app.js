@@ -80,9 +80,13 @@ elements.loginForm?.addEventListener("submit", async (event) => {
   const formData = new FormData(elements.loginForm);
   const username = String(formData.get("username") || "");
   const password = String(formData.get("password") || "");
+  const submitter = event.submitter;
+  const action =
+    submitter instanceof HTMLButtonElement ? submitter.value || "login" : "login";
+  const endpoint = action === "signup" ? "/api/users" : "/api/session";
 
   try {
-    await api("/api/session", {
+    await api(endpoint, {
       method: "POST",
       body: JSON.stringify({ username, password }),
     });
