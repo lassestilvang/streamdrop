@@ -27,6 +27,7 @@ test("resolveConfig reads defaults from the environment", () => {
     fetchTimeoutMs: 12000,
     maxHtmlBytes: 750000,
   });
+  assert.equal(config.processedCollectionId, null);
 });
 
 test("resolveConfig allows safe query overrides", () => {
@@ -82,4 +83,13 @@ test("restoreConfig rebuilds derived fields from a stored public config", () => 
   assert.equal(config.search, "tag:tts");
   assert.equal(config.sort, "title");
   assert.equal(config.nested, false);
+});
+
+test("resolveConfig reads the optional processed collection id from the environment", () => {
+  const config = resolveConfig("https://example.com/api/generate", {
+    RAINDROP_TOKEN: "token",
+    RAINDROP_PROCESSED_COLLECTION_ID: "77",
+  });
+
+  assert.equal(config.processedCollectionId, 77);
 });
