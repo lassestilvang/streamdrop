@@ -17,6 +17,7 @@ test("resolveConfig reads defaults from the environment", () => {
 
   assert.deepEqual(getPublicConfig(config), {
     collectionId: 0,
+    includeSummaries: false,
     search: "",
     sort: "-created",
     nested: true,
@@ -32,7 +33,7 @@ test("resolveConfig reads defaults from the environment", () => {
 
 test("resolveConfig allows safe query overrides", () => {
   const config = resolveConfig(
-    "https://example.com/api/generate?maxArticles=12&maxMinutes=60&wordsPerMinute=200&nested=false&sort=title&search=tag%3Atts",
+    "https://example.com/api/generate?maxArticles=12&maxMinutes=60&wordsPerMinute=200&nested=false&summaries=true&sort=title&search=tag%3Atts",
     {
       RAINDROP_TOKEN: "token",
       MAX_ARTICLES: "8",
@@ -43,6 +44,7 @@ test("resolveConfig allows safe query overrides", () => {
   assert.equal(config.maxMinutes, 60);
   assert.equal(config.wordsPerMinute, 200);
   assert.equal(config.nested, false);
+  assert.equal(config.includeSummaries, true);
   assert.equal(config.sort, "title");
   assert.equal(config.search, "tag:tts");
 });
@@ -68,6 +70,15 @@ test("resolveConfig rejects unsupported sort values", () => {
   );
 });
 
+test("resolveConfig reads the summaries toggle from the environment", () => {
+  const config = resolveConfig("https://example.com/api/generate", {
+    RAINDROP_TOKEN: "token",
+    SUMMARIES_ENABLED: "true",
+  });
+
+  assert.equal(config.includeSummaries, true);
+});
+
 test("resolveConfig rejects malformed tag shorthand", () => {
   assert.throws(
     () =>
@@ -82,6 +93,7 @@ test("restoreConfig rebuilds derived fields from a stored public config", () => 
   const config = restoreConfig(
     {
       collectionId: 42,
+      includeSummaries: true,
       search: "tag:tts",
       sort: "title",
       nested: false,
@@ -101,6 +113,7 @@ test("restoreConfig rebuilds derived fields from a stored public config", () => 
   assert.equal(config.maxWords, 12000);
   assert.equal(config.perPage, 12);
   assert.equal(config.collectionId, 42);
+  assert.equal(config.includeSummaries, true);
   assert.equal(config.search, "tag:tts");
   assert.equal(config.sort, "title");
   assert.equal(config.nested, false);
