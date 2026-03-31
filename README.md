@@ -21,22 +21,24 @@ Streamdrop flips that:
 ## 🚀 How It Works
 
 ```
-Raindrop → Fetch → Extract → Clean → Batch → Persist → Move processed items → ElevenReader
+Raindrop → Fetch → Extract → Optional summarize → Clean → Batch → Persist → Move processed items → ElevenReader
 ```
 
 1. Fetch unread articles from Raindrop API
 2. Extract clean content using Readability
-3. Estimate reading time
-4. Batch into ~30–60 min chunks
-5. Generate a structured HTML document
-6. Persist the successful run
-7. Optionally move processed source articles into a dedicated Raindrop collection
-8. Paste into ElevenReader → listen 🎧
+3. Optionally generate short AI summaries per article
+4. Estimate reading time
+5. Batch into ~30–60 min chunks
+6. Generate a structured HTML document
+7. Persist the successful run
+8. Optionally move processed source articles into a dedicated Raindrop collection
+9. Paste into ElevenReader → listen 🎧
 
 ## 📦 Features
 
 * 📚 Fetch articles from Raindrop
 * 🧹 Clean extraction (no ads, nav, clutter)
+* ✍️ Optional Gemini-powered article summaries
 * ⏱️ Smart batching based on reading time
 * 📦 Optional post-run archive move into a processed Raindrop collection
 * 🎧 Optimized for TTS (clear separators, structure)
@@ -156,6 +158,9 @@ Optional:
 - `RAINDROP_COLLECTION_ID`: collection to read from. Default `0` for all collections except trash.
 - `RAINDROP_PROCESSED_COLLECTION_ID`: destination collection that successful runs move processed source articles into. Unset by default.
 - `RAINDROP_SEARCH`: Raindrop search filter. Tag shorthand like `tag:tts` and `tag:"long reads"` is validated and converted to Raindrop's `#tag` syntax when requests are sent.
+- `SUMMARIES_ENABLED`: enable best-effort AI summaries for extracted articles. Default `false`.
+- `GEMINI_API_KEY`: Gemini API key used when summaries are enabled.
+- `GEMINI_MODEL`: Gemini text model for summaries. Default `gemini-3-flash-preview`.
 - `MAX_MINUTES`: target duration per output batch. Default `45`.
 - `WORDS_PER_MINUTE`: reading speed estimate. Default `180`.
 - `MAX_ARTICLES`: max number of Raindrop items to attempt per request. Default `20`.
@@ -175,11 +180,12 @@ Request-level overrides are also supported via query string:
 /api/generate?maxArticles=10&maxMinutes=60&search=tag:tts
 ```
 
-The `search` override also accepts validated tag shorthand such as `tag:tts`, `tag:"long reads"`, or `-tag:archive`.
+The `search` override also accepts validated tag shorthand such as `tag:tts`, `tag:"long reads"`, or `-tag:archive`. The `summaries` override accepts `true` or `false`.
 
 Supported query parameters:
 
 - `collectionId`
+- `summaries`
 - `search`
 - `sort`
 - `nested`
@@ -196,7 +202,7 @@ Open `/` to use the dashboard. It adds:
 
 - Login plus account creation from the same auth form.
 - Database-backed sessions when Postgres is configured, with a legacy signed-cookie fallback when it is not.
-- Queue generation from the browser using the existing queued-run lifecycle.
+- Queue generation from the browser using the existing queued-run lifecycle, including an AI summaries toggle.
 - Stored latest-queue retrieval for the current configuration.
 - Batch preview, copy-to-clipboard, and direct HTML opening.
 - Public signed batch HTML links for ElevenReader or other unauthenticated consumers.
