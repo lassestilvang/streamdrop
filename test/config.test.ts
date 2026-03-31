@@ -47,6 +47,17 @@ test("resolveConfig allows safe query overrides", () => {
   assert.equal(config.search, "tag:tts");
 });
 
+test("resolveConfig accepts quoted tag shorthand in search filters", () => {
+  const config = resolveConfig(
+    "https://example.com/api/generate?search=tag%3A%22machine%20learning%22%20-tag%3Aarchive",
+    {
+      RAINDROP_TOKEN: "token",
+    },
+  );
+
+  assert.equal(config.search, 'tag:"machine learning" -tag:archive');
+});
+
 test("resolveConfig rejects unsupported sort values", () => {
   assert.throws(
     () =>
@@ -54,6 +65,16 @@ test("resolveConfig rejects unsupported sort values", () => {
         RAINDROP_TOKEN: "token",
       }),
     /Unsupported sort value/,
+  );
+});
+
+test("resolveConfig rejects malformed tag shorthand", () => {
+  assert.throws(
+    () =>
+      resolveConfig("https://example.com/api/generate?search=tag%3A", {
+        RAINDROP_TOKEN: "token",
+      }),
+    /invalid tag filter/i,
   );
 });
 
