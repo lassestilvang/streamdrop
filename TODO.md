@@ -8,7 +8,7 @@
 * [ ] Generate AI summaries per article (e.g. before each article `Summary: ...`). Keep summaries optional, bounded in length, and isolated from the core extraction flow so queue generation still works without the model step.
 * [ ] Auto daily generation (cron). Define the schedule, destination of the generated output, and retry behavior when upstream extraction fails.
 * [ ] Multi-language support. Decide whether this means language-aware extraction, different reading-speed defaults, translated UI text, or generated summaries in multiple languages.
-* [x] Web UI (view + copy queue easily). A single-user dashboard now lives at `/`, with signed-cookie auth, queue generation controls, stored-queue loading, batch preview/copy actions, skipped-article inspection, and recent run stats.
+* [x] Web UI (view + copy queue easily). An authenticated dashboard now lives at `/`, with login/signup controls, queue generation controls, stored-queue loading, batch preview/copy actions, skipped-article inspection, and recent run stats.
 * [ ] One-tap iPhone Shortcut integration (one tap to fetch latest queue and open in ElevenReader). Specify the response format and shortcut flow so this works without manual HTML copy/paste.
 * [ ] Deduplication + scoring. Prevent repeated articles across runs and define how freshness, length, source quality, tags, favorites, and source diversity affect queue priority.
 * [ ] “Smart batching” (detect complexity, adjust pacing). Replace pure word-count batching with a configurable heuristic that considers article difficulty, density, source type, and language grouping.
@@ -20,7 +20,7 @@
 ## Deployment and Security
 
 * [x] Add CI for typecheck, tests, and deployment-safe validation. GitHub Actions now runs `npm ci` and `npm run check` on every push and pull request in `.github/workflows/ci.yml`.
-* [x] Protect the public API before exposing it on Vercel. The queue, run, and health endpoints now require a single-user session created via `/api/session`, matching the authenticated web UI.
+* [x] Protect the public API before exposing it on Vercel. The queue, run, and health endpoints now require an authenticated session created via `/api/session`, matching the authenticated web UI.
 * [ ] Add rate limiting and abuse controls. Prevent repeated expensive extraction requests from exhausting Vercel execution time or upstream bandwidth.
 * [ ] Add request/response guardrails for production traffic. Define max request frequency, acceptable query overrides, and safe defaults for expensive knobs like `maxArticles` and `concurrency`.
 * [ ] Tighten authentication defaults for production. Fail closed when `APP_USERNAME`, `APP_PASSWORD`, or `SESSION_SECRET` are missing instead of falling back to development-safe defaults.
@@ -40,16 +40,16 @@
 
 ### Phase 1: Tenancy Foundation
 
-* [ ] Add first-class user tables. Create `users`, `sessions`, and per-user Raindrop account/settings tables so identity and external-account ownership live in the database instead of env vars.
-* [ ] Add tenant ownership to persisted run data. Attach `user_id` to `queue_runs` and decide whether related tables inherit ownership by join-through-run or store `user_id` directly for simpler policy enforcement.
-* [ ] Replace the global single-user auth model with real user sessions. Move from deployment-level credentials to user records, store user identity in the session, and reject cross-user access on every route.
-* [ ] Scope all queue, run, and HTML-link queries by user. Ensure `/api/runs`, `/api/runs/:runId`, `/api/queue/latest`, `/api/queue/latest/html`, and signed batch links only operate on the current user's records.
-* [ ] Move queue configuration out of environment variables and into per-user settings. Persist each user's Raindrop token, source collection, processed collection, filters, and batching defaults.
+* [x] Add first-class user/session tables and user-settings scaffolding. `users`, `user_sessions`, `user_settings`, and the related migrations now exist, and the legacy env credentials can bootstrap the first owner record.
+* [x] Add tenant ownership to persisted run data. `queue_runs.user_id` now exists and recent-run/latest-run retrieval can scope on the authenticated user.
+* [ ] Finish replacing the global single-user auth model with real user sessions. Login/signup now use database users and persisted sessions, but the legacy env-backed bootstrap/fallback path still exists.
+* [x] Scope queue, run, and HTML-link lookups by user where persisted ownership exists. `/api/runs`, `/api/runs/:runId`, `/api/queue/latest`, `/api/queue/latest/html`, and signed batch-link minting now pass `session.userId`.
+* [ ] Finish moving queue configuration out of environment variables and into per-user settings. `user_settings` exists and is seeded for the bootstrap user, but runtime generation still reads the Raindrop/config values from env vars.
 * [ ] Add tenant-aware migrations for existing data. Define how the current single-user data maps into the first created user/admin account and make the migration reversible enough for development rollback.
 
 ### Phase 2: User Product Surface
 
-* [ ] Redesign the dashboard for account ownership. Add signup/login/logout flows, a settings area for connecting Raindrop, per-user collection selection, and user-scoped queue history.
+* [ ] Finish redesigning the dashboard for account ownership. Basic signup/login/logout exists, but the settings area for connecting Raindrop, per-user collection selection, and true user-scoped configuration management are still missing.
 * [ ] Add first-run onboarding for new users. Guide them through account creation, Raindrop connection, source collection setup, processed collection setup, and the first successful queue run.
 * [ ] Add account recovery flows. Support password reset or magic-link email login so the app is usable without direct database or environment access.
 * [ ] Add user-visible connection health and setup validation. Show when a Raindrop token is missing, invalid, expired, or misconfigured before the user tries to run extraction.
