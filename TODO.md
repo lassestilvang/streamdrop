@@ -4,7 +4,7 @@
 
 * [x] Move processed articles to a dedicated Raindrop collection. Successful runs now optionally move extracted source articles into a configured processed collection so they do not get picked up again from that configured source collection on the next run.
 * [x] Add persisted latest-queue retrieval endpoints (e.g. `/queue/latest` and batch-specific HTML output). Latest stored queue JSON and batch HTML can now be served directly from Postgres without re-running extraction.
-* [ ] Tag-based filtering (e.g. only `tts`). Support either a default configured Raindrop search/tag filter or per-request filtering with validation.
+* [x] Tag-based filtering (e.g. only `tts`). `RAINDROP_SEARCH` and `?search=` now accept validated tag shorthand such as `tag:tts` or `tag:"long reads"`, and the Raindrop client normalizes that shorthand into the API's `#tag` filter syntax.
 * [ ] Generate AI summaries per article (e.g. before each article `Summary: ...`). Keep summaries optional, bounded in length, and isolated from the core extraction flow so queue generation still works without the model step.
 * [ ] Auto daily generation (cron). Define the schedule, destination of the generated output, and retry behavior when upstream extraction fails.
 * [ ] Multi-language support. Decide whether this means language-aware extraction, different reading-speed defaults, translated UI text, or generated summaries in multiple languages.
