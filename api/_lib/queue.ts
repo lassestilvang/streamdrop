@@ -45,6 +45,9 @@ export function renderBatchHtml(batch: QueueBatch): string {
   let body = "";
 
   for (const article of batch.articles) {
+    const summary = article.summary
+      ? `<p class="summary"><strong>Summary:</strong> ${escapeHtml(article.summary)}</p>`
+      : "";
     const paragraphs = article.content
       .split(/\n{2,}/)
       .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
@@ -54,6 +57,7 @@ export function renderBatchHtml(batch: QueueBatch): string {
       <section class="article">
         <div class="separator">Next article</div>
         <h2>${escapeHtml(article.title)}</h2>
+        ${summary}
         <p class="meta">
           Source: <a href="${escapeAttribute(article.sourceUrl)}">${escapeHtml(getSourceDomain(article.sourceUrl))}</a>
         </p>
