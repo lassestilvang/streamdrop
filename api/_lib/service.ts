@@ -161,7 +161,7 @@ async function bestEffortPersistFailure(runId: string, error: unknown): Promise<
   try {
     await persistFailedRun(runId, error);
   } catch (persistenceError) {
-    console.error("Failed to persist run failure", persistenceError);
+    logger.error("Failed to persist run failure", persistenceError);
   }
 }
 
@@ -172,7 +172,7 @@ async function bestEffortPersistProcessedMoveResult(
   try {
     await persistProcessedMoveResult(runId, processed);
   } catch (persistenceError) {
-    console.error("Failed to persist processed move result", persistenceError);
+    logger.error("Failed to persist processed move result", persistenceError);
   }
 }
 
