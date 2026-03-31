@@ -15,6 +15,7 @@ export async function GET(request: Request): Promise<Response> {
       databaseConfigured: boolean;
       processedCollectionConfigured: boolean;
       collectionId: number;
+      includeSummaries: boolean;
       search: string;
       sort: string;
       nested: boolean;
