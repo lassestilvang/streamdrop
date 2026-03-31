@@ -6,7 +6,7 @@
 * [x] Add persisted latest-queue retrieval endpoints (e.g. `/queue/latest` and batch-specific HTML output). Latest stored queue JSON and batch HTML can now be served directly from Postgres without re-running extraction.
 * [x] Tag-based filtering (e.g. only `tts`). `RAINDROP_SEARCH` and `?search=` now accept validated tag shorthand such as `tag:tts` or `tag:"long reads"`, and the Raindrop client normalizes that shorthand into the API's `#tag` filter syntax.
 * [x] Generate AI summaries per article (e.g. before each article `Summary: ...`). Queue generation now supports an optional summaries toggle backed by Gemini, caps summary length, and treats summary failures as best-effort so the queue still succeeds without the model step.
-* [ ] Auto daily generation (cron). Define the schedule, destination of the generated output, and retry behavior when upstream extraction fails.
+* [x] Auto daily generation (cron). Define the schedule, destination of the generated output, and retry behavior when upstream extraction fails.
 * [ ] Multi-language support. Decide whether this means language-aware extraction, different reading-speed defaults, translated UI text, or generated summaries in multiple languages.
 * [x] Web UI (view + copy queue easily). An authenticated dashboard now lives at `/`, with login/signup controls, queue generation controls, stored-queue loading, batch preview/copy actions, skipped-article inspection, and recent run stats.
 * [ ] One-tap iPhone Shortcut integration (one tap to fetch latest queue and open in ElevenReader). Specify the response format and shortcut flow so this works without manual HTML copy/paste.
