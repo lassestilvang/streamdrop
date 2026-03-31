@@ -1,4 +1,5 @@
 import { AppError, isAppError } from "./errors.js";
+import { logger } from "./logger.js";
 
 export function json(data: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
