@@ -8,6 +8,7 @@ import type {
 
 const RAINDROP_API_BASE = "https://api.raindrop.io/rest/v1";
 const USER_AGENT = "streamdrop/1.0 (+https://vercel.com)";
+const TAG_SEARCH_SHORTHAND_PATTERN = /(^|\s)(-?)tag:(?:"([^"\r\n]+)"|([^\s]+))/gi;
 
 interface RaindropApiResponse {
   items?: Array<{
@@ -41,8 +42,10 @@ export async function fetchRaindrops(config: AppConfig): Promise<RaindropItem[]>
     url.searchParams.set("sort", config.sort);
     url.searchParams.set("nested", String(config.nested));
 
-    if (config.search) {
-      url.searchParams.set("search", config.search);
+    const search = normalizeSearchForRaindrop(config.search);
+
+    if (search) {
+      url.searchParams.set("search", search);
     }
 
     const payload = await fetchJson<RaindropApiResponse>(url.toString(), {
@@ -180,4 +183,19 @@ export async function moveProcessedRaindrops(
     failed: failures.length,
     failures,
   };
+}
+
+function normalizeSearchForRaindrop(search: string): string {
+  if (!search) {
+    return "";
+  }
+
+  return search.replace(
+    TAG_SEARCH_SHORTHAND_PATTERN,
+    (_match, prefix: string, negation: string, quotedTag: string, bareTag: string) => {
+      const tag = (quotedTag || bareTag || "").trim();
+      const token = /\s/.test(tag) ? `#"${tag}"` : `#${tag}`;
+      return `${prefix}${negation}${token}`;
+    },
+  );
 }
