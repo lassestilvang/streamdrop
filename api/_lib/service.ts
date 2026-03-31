@@ -4,11 +4,7 @@ import { getPublicConfig, restoreConfig } from "./config.js";
 import { extractArticles } from "./extract.js";
 import { logger } from "./logger.js";
 import {
-  createQueuedRun,
   createRunningRun,
-  getRunConfig,
-  getRunRecord,
-  markRunRunning,
   persistFailedRun,
   persistProcessedMoveResult,
   persistSucceededRun,
@@ -22,7 +18,6 @@ import type {
   GenerateQueueResult,
   ProcessedArticleMoveSummary,
   PublicConfig,
-  QueueRunRecord,
 } from "./types.js";
 
 export async function generateQueue(config: AppConfig): Promise<GenerateQueueResult> {
@@ -41,41 +36,6 @@ export async function generateQueue(config: AppConfig): Promise<GenerateQueueRes
     await bestEffortPersistFailure(runId, error);
     throw error;
   }
-}
-
-export async function enqueueQueueRun(config: AppConfig): Promise<QueueRunRecord> {
-  logger.info("Enqueuing run", { userId: config.userId });
-  return createQueuedRun(getPublicConfig(config), config.userId);
-}
-
-export async function processQueuedRun(runId: string, userId?: string): Promise<QueueRunRecord> {
-  const storedConfig = await getRunConfig(runId, userId);
-
-  if (!storedConfig) {
-    logger.warn("Process queued run: run not found", { runId, userId });
-    throw new AppError(404, "RUN_NOT_FOUND", "Run not found.");
-  }
-
-  logger.info("Processing queued run", { runId, userId });
-  await markRunRunning(runId, userId);
-
-  try {
-    const config = restoreConfig(storedConfig, process.env, userId);
-    await executeQueueRun(runId, config, storedConfig);
-    logger.info("Queued run succeeded", { runId });
-  } catch (error) {
-    logger.error("Queued run failed", error, { runId });
-    await bestEffortPersistFailure(runId, error);
-    throw error;
-  }
-
-  const run = await getRunRecord(runId, userId);
-
-  if (!run) {
-    throw new AppError(500, "RUN_NOT_FOUND", "Processed run could not be reloaded.");
-  }
-
-  return run;
 }
 
 async function executeQueueRun(

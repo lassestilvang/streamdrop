@@ -10,7 +10,6 @@ import runsHandler from "../api/runs/index.js";
 import runHandler from "../api/runs/[runId]/index.js";
 import runHtmlHandler from "../api/runs/[runId]/html.js";
 import runHtmlLinkHandler from "../api/runs/[runId]/html-link.js";
-import runProcessHandler from "../api/runs/[runId]/process.js";
 import sessionHandler from "../api/session.js";
 import usersHandler from "../api/users.js";
 
@@ -93,10 +92,6 @@ async function routeRequest(request: Request): Promise<Response> {
 
   if (url.pathname === "/api/runs") {
     return runsHandler.fetch(request);
-  }
-
-  if (/^\/api\/runs\/[^/]+\/process$/.test(url.pathname)) {
-    return runProcessHandler.fetch(request);
   }
 
   if (/^\/api\/runs\/[^/]+\/html-link$/.test(url.pathname)) {

@@ -714,18 +714,11 @@ async function executeRun(queryString, messages) {
 
   try {
     const createResponse = await api(`/api/runs${queryString}`, { method: "POST" });
-    const { run, links } = createResponse;
+    const { run } = createResponse;
 
-    setRunStatus(messages.queued, `Run ${run.id} is being processed.`);
-
-    const processPromise = fetch(links.process, {
-      method: "POST",
-      credentials: "same-origin",
-    }).catch(() => null);
-
-    const completedRun = cacheRun(await pollRun(links.status, run.id));
-    await processPromise;
     await refreshHistory();
+
+    const completedRun = cacheRun(run);
 
     useRun(completedRun, { hydrate: false, preserveComparison: false });
     state.expandedHistoryRunId = completedRun.id;
@@ -967,22 +960,6 @@ function findTopSkipReason(skipped) {
 function setRunStatus(status, meta = "") {
   elements.runStatus.textContent = status;
   elements.runMeta.textContent = meta;
-}
-
-async function pollRun(path, runId) {
-  for (let attempt = 0; attempt < 90; attempt += 1) {
-    const payload = await api(path);
-    const run = payload.run;
-
-    if (run.status === "succeeded" || run.status === "failed") {
-      return run;
-    }
-
-    setRunStatus(`Run ${runId} is ${run.status}.`, "Polling for completion.");
-    await wait(1500);
-  }
-
-  throw new Error(`Timed out while waiting for run ${runId} to complete.`);
 }
 
 async function api(path, init = {}) {
