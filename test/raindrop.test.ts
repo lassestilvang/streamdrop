@@ -42,7 +42,13 @@ test("fetchRaindrops normalizes tag shorthand before calling Raindrop", async ()
     });
 
     assert.equal(calls.length, 1);
-    const url = new URL(calls[0]);
+    const firstCall = calls[0];
+
+    if (!firstCall) {
+      throw new Error("Expected a Raindrop request to be recorded.");
+    }
+
+    const url = new URL(firstCall);
     assert.equal(url.pathname, "/rest/v1/raindrops/42");
     assert.equal(url.searchParams.get("search"), '#tts -#"long reads"');
   } finally {
