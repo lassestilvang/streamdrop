@@ -3,6 +3,7 @@ export interface AppConfig {
   token: string;
   collectionId: number;
   processedCollectionId: number | null;
+  includeSummaries: boolean;
   search: string;
   sort: string;
   nested: boolean;
@@ -18,6 +19,7 @@ export interface AppConfig {
 
 export interface PublicConfig {
   collectionId: number;
+  includeSummaries: boolean;
   search: string;
   sort: string;
   nested: boolean;
@@ -52,6 +54,7 @@ export interface ExtractedArticle {
   sourceUrl: string;
   collectionId: number;
   created?: string;
+  summary?: string;
   content: string;
   wordCount: number;
   minutes: number;
@@ -67,6 +70,7 @@ export interface SkippedArticle {
 export interface QueueArticleSummary {
   title: string;
   sourceUrl: string;
+  summary?: string;
   wordCount: number;
   estimatedMinutes: number;
 }
