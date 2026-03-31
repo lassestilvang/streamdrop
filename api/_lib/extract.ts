@@ -1,6 +1,7 @@
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 
+import { logger } from "./logger.js";
 import type { AppConfig, ExtractedArticle, RaindropItem, SkippedArticle } from "./types.js";
 
 const ALLOWED_CONTENT_TYPES = ["text/html", "application/xhtml+xml"];
@@ -104,8 +105,11 @@ async function extractArticle(item: RaindropItem, config: AppConfig): Promise<Ex
     };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
+      logger.warn("Extraction timeout", { url: item.link, timeoutMs: config.fetchTimeoutMs });
       return { ok: false, reason: `Timed out after ${config.fetchTimeoutMs}ms` };
     }
+
+    logger.error("Extraction failure", error, { url: item.link });
 
     return {
       ok: false,

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { getPublicConfig, restoreConfig } from "./config.js";
 import { extractArticles } from "./extract.js";
+import { logger } from "./logger.js";
 import {
   createQueuedRun,
   createRunningRun,
@@ -28,18 +29,22 @@ export async function generateQueue(config: AppConfig): Promise<GenerateQueueRes
   const runId = randomUUID();
   const publicConfig = getPublicConfig(config);
 
+  logger.info("Generating queue synchronously", { runId, userId: config.userId });
   await createRunningRun(runId, publicConfig, config.userId);
 
   try {
     const result = await executeQueueRun(runId, config, publicConfig);
+    logger.info("Queue generation succeeded", { runId, batches: result.batches.length });
     return result;
   } catch (error) {
+    logger.error("Queue generation failed", error, { runId });
     await bestEffortPersistFailure(runId, error);
     throw error;
   }
 }
 
 export async function enqueueQueueRun(config: AppConfig): Promise<QueueRunRecord> {
+  logger.info("Enqueuing run", { userId: config.userId });
   return createQueuedRun(getPublicConfig(config), config.userId);
 }
 
@@ -47,15 +52,19 @@ export async function processQueuedRun(runId: string, userId?: string): Promise<
   const storedConfig = await getRunConfig(runId, userId);
 
   if (!storedConfig) {
+    logger.warn("Process queued run: run not found", { runId, userId });
     throw new AppError(404, "RUN_NOT_FOUND", "Run not found.");
   }
 
+  logger.info("Processing queued run", { runId, userId });
   await markRunRunning(runId, userId);
 
   try {
     const config = restoreConfig(storedConfig, process.env, userId);
     await executeQueueRun(runId, config, storedConfig);
+    logger.info("Queued run succeeded", { runId });
   } catch (error) {
+    logger.error("Queued run failed", error, { runId });
     await bestEffortPersistFailure(runId, error);
     throw error;
   }
