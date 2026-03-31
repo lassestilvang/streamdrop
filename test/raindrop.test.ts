@@ -1,7 +1,54 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { moveProcessedRaindrops } from "../api/_lib/raindrop.js";
+import { fetchRaindrops, moveProcessedRaindrops } from "../api/_lib/raindrop.js";
+
+test("fetchRaindrops normalizes tag shorthand before calling Raindrop", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+
+  globalThis.fetch = (async (url) => {
+    calls.push(String(url));
+
+    return new Response(
+      JSON.stringify({
+        items: [],
+      }),
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+        },
+      },
+    );
+  }) as typeof fetch;
+
+  try {
+    await fetchRaindrops({
+      token: "token",
+      collectionId: 42,
+      processedCollectionId: null,
+      search: 'tag:tts -tag:"long reads"',
+      sort: "-created",
+      nested: true,
+      maxArticles: 20,
+      maxMinutes: 45,
+      wordsPerMinute: 180,
+      extractionConcurrency: 4,
+      fetchTimeoutMs: 12000,
+      maxHtmlBytes: 750000,
+      maxWords: 8100,
+      perPage: 20,
+    });
+
+    assert.equal(calls.length, 1);
+    const url = new URL(calls[0]);
+    assert.equal(url.pathname, "/rest/v1/raindrops/42");
+    assert.equal(url.searchParams.get("search"), '#tts -#"long reads"');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("moveProcessedRaindrops groups articles by source collection and reports successes", async () => {
   const originalFetch = globalThis.fetch;
