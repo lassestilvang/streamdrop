@@ -155,7 +155,7 @@ Optional:
 - `HTML_LINK_TTL_SECONDS`: expiry window for public batch HTML links. Default `2592000` (30 days).
 - `RAINDROP_COLLECTION_ID`: collection to read from. Default `0` for all collections except trash.
 - `RAINDROP_PROCESSED_COLLECTION_ID`: destination collection that successful runs move processed source articles into. Unset by default.
-- `RAINDROP_SEARCH`: Raindrop search filter.
+- `RAINDROP_SEARCH`: Raindrop search filter. Tag shorthand like `tag:tts` and `tag:"long reads"` is validated and converted to Raindrop's `#tag` syntax when requests are sent.
 - `MAX_MINUTES`: target duration per output batch. Default `45`.
 - `WORDS_PER_MINUTE`: reading speed estimate. Default `180`.
 - `MAX_ARTICLES`: max number of Raindrop items to attempt per request. Default `20`.
@@ -174,6 +174,8 @@ Request-level overrides are also supported via query string:
 ```text
 /api/generate?maxArticles=10&maxMinutes=60&search=tag:tts
 ```
+
+The `search` override also accepts validated tag shorthand such as `tag:tts`, `tag:"long reads"`, or `-tag:archive`.
 
 Supported query parameters:
 
