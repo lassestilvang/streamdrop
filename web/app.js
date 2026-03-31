@@ -1,5 +1,6 @@
 const CONFIG_QUERY_KEYS = {
   collectionId: "collectionId",
+  includeSummaries: "summaries",
   search: "search",
   sort: "sort",
   nested: "nested",
@@ -57,6 +58,7 @@ const formFields = {
   collectionId: document.querySelector("#collectionIdInput"),
   sort: document.querySelector("#sortInput"),
   nested: document.querySelector("#nestedInput"),
+  summaries: document.querySelector("#summariesInput"),
   maxArticles: document.querySelector("#maxArticlesInput"),
   maxMinutes: document.querySelector("#maxMinutesInput"),
   wordsPerMinute: document.querySelector("#wordsPerMinuteInput"),
@@ -228,6 +230,7 @@ function hydrateForm(configuration) {
   formFields.collectionId.value = String(configuration.collectionId ?? 0);
   formFields.sort.value = configuration.sort ?? "-created";
   formFields.nested.value = String(configuration.nested ?? true);
+  formFields.summaries.value = String(configuration.includeSummaries ?? false);
   formFields.maxArticles.value = String(configuration.maxArticles ?? 20);
   formFields.maxMinutes.value = String(configuration.maxMinutes ?? 45);
   formFields.wordsPerMinute.value = String(configuration.wordsPerMinute ?? 180);
@@ -411,6 +414,7 @@ function renderPreview() {
       (article) => `
         <article class="article-row">
           <strong>${escapeHtml(article.title)}</strong>
+          ${article.summary ? `<p>${escapeHtml(article.summary)}</p>` : ""}
           <p>${escapeHtml(String(article.wordCount))} words · ${escapeHtml(String(article.estimatedMinutes))} minutes</p>
           <a href="${escapeAttribute(article.sourceUrl)}" target="_blank" rel="noreferrer">Open source</a>
         </article>
@@ -1008,10 +1012,13 @@ async function api(path, init = {}) {
 function compactConfig(config) {
   return [
     config.search ? `search=${config.search}` : "search=all",
+    config.includeSummaries ? "summaries=on" : null,
     `articles=${config.maxArticles}`,
     `minutes=${config.maxMinutes}`,
     `wpm=${config.wordsPerMinute}`,
-  ].join(" · ");
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function formatDate(value) {
