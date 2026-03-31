@@ -61,6 +61,31 @@ test("renderBatchHtml escapes article content and titles", () => {
   assert.doesNotMatch(html, /<script>/);
 });
 
+test("renderBatchHtml includes escaped article summaries when available", () => {
+  const [batch] = createBatches(
+    [
+      {
+        id: 1,
+        title: "Summary test",
+        sourceUrl: "https://example.com/summary",
+        collectionId: 1,
+        summary: 'Summary: <unsafe> but helpful.',
+        content: "Article body.",
+        wordCount: 2,
+        minutes: 1,
+        position: 0,
+      },
+    ],
+    200,
+  );
+
+  assert.ok(batch);
+
+  const html = renderBatchHtml(batch);
+
+  assert.match(html, /<strong>Summary:<\/strong> Summary: &lt;unsafe&gt; but helpful\./);
+});
+
 test("renderBatchHtml omits spoken queue counts and article reading times", () => {
   const [batch] = createBatches(
     [
