@@ -23,7 +23,7 @@
 * [x] Protect the public API before exposing it on Vercel. The queue, run, and health endpoints now require an authenticated session created via `/api/session`, matching the authenticated web UI.
 * [ ] Add rate limiting and abuse controls. Prevent repeated expensive extraction requests from exhausting Vercel execution time or upstream bandwidth.
 * [ ] Add request/response guardrails for production traffic. Define max request frequency, acceptable query overrides, and safe defaults for expensive knobs like `maxArticles` and `concurrency`.
-* [ ] Tighten authentication defaults for production. Fail closed when `APP_USERNAME`, `APP_PASSWORD`, or `SESSION_SECRET` are missing instead of falling back to development-safe defaults.
+* [x] Tighten authentication defaults for production. Fail closed when `APP_USERNAME`, `APP_PASSWORD`, or `SESSION_SECRET` are missing instead of falling back to development-safe defaults.
 * [ ] Harden public HTML link signing. Require a dedicated signing secret in production, shorten default TTLs, and document the intended exposure model for batch links.
 
 ## Reliability and Operations

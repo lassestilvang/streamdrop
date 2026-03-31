@@ -377,6 +377,14 @@ async function maybeBootstrapLegacyUser(env: NodeJS.ProcessEnv): Promise<void> {
 }
 
 function getAuthSettings(env: NodeJS.ProcessEnv): AuthSettings {
+  if (env.NODE_ENV === "production") {
+    if (!env.APP_USERNAME || !env.APP_PASSWORD || !env.SESSION_SECRET) {
+      throw new Error(
+        "APP_USERNAME, APP_PASSWORD, and SESSION_SECRET must be explicitly set in production.",
+      );
+    }
+  }
+
   const username = (env.APP_USERNAME || DEFAULT_USERNAME).trim();
   const password = (env.APP_PASSWORD || DEFAULT_PASSWORD).trim();
   const secret = (env.SESSION_SECRET || `${username}:${password}:${DEFAULT_SECRET}`).trim();
