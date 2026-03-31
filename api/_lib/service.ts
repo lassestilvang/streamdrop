@@ -14,6 +14,7 @@ import {
 } from "./persistence.js";
 import { createBatches, renderBatchHtml } from "./queue.js";
 import { fetchRaindrops, moveProcessedRaindrops } from "./raindrop.js";
+import { maybeSummarizeArticles } from "./summaries.js";
 import { AppError } from "./errors.js";
 import type {
   AppConfig,
@@ -75,19 +76,22 @@ async function executeQueueRun(
 ): Promise<GenerateQueueResult> {
   const raindrops = await fetchRaindrops(config);
   const { extracted, skipped } = await extractArticles(raindrops, config);
+  const summarizedArticles = await bestEffortSummarizeArticles(extracted, config);
   const generatedAt = new Date().toISOString();
-  const batches = createBatches(extracted, config.maxWords, config.wordsPerMinute).map((batch) => ({
-    ...batch,
-    html: renderBatchHtml(batch),
-  }));
-  const totalWords = extracted.reduce((total, article) => total + article.wordCount, 0);
+  const batches = createBatches(summarizedArticles, config.maxWords, config.wordsPerMinute).map(
+    (batch) => ({
+      ...batch,
+      html: renderBatchHtml(batch),
+    }),
+  );
+  const totalWords = summarizedArticles.reduce((total, article) => total + article.wordCount, 0);
   const result: GenerateQueueResult = {
     runId,
     generatedAt,
     config: publicConfig,
     totals: {
       fetched: raindrops.length,
-      extracted: extracted.length,
+      extracted: summarizedArticles.length,
       skipped: skipped.length,
       batches: batches.length,
       words: totalWords,
@@ -101,6 +105,7 @@ async function executeQueueRun(
       articles: batch.articles.map((article) => ({
         title: article.title,
         sourceUrl: article.sourceUrl,
+        ...(article.summary ? { summary: article.summary } : {}),
         wordCount: article.wordCount,
         estimatedMinutes: Math.round(article.minutes),
       })),
@@ -121,7 +126,7 @@ async function executeQueueRun(
   });
 
   if (config.processedCollectionId) {
-    const processed = await moveProcessedRaindropsSafely(extracted, config);
+    const processed = await moveProcessedRaindropsSafely(summarizedArticles, config);
     result.processed = processed;
 
     if (processed) {
@@ -130,6 +135,17 @@ async function executeQueueRun(
   }
 
   return result;
+}
+
+async function bestEffortSummarizeArticles(
+  extracted: Parameters<typeof maybeSummarizeArticles>[0],
+  config: AppConfig,
+): Promise<Parameters<typeof maybeSummarizeArticles>[0]> {
+  try {
+    return await maybeSummarizeArticles(extracted, config);
+  } catch {
+    return extracted;
+  }
 }
 
 async function bestEffortPersistFailure(runId: string, error: unknown): Promise<void> {
