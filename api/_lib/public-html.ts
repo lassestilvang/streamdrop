@@ -49,6 +49,16 @@ function signPayload(
 }
 
 function getPublicHtmlSecret(env: NodeJS.ProcessEnv): string {
+  if (env.NODE_ENV === "production") {
+    const secret = env.HTML_LINK_SIGNING_SECRET || env.PUBLIC_HTML_LINK_SECRET;
+    if (!secret) {
+      throw new Error(
+        "HTML_LINK_SIGNING_SECRET must be explicitly set in production.",
+      );
+    }
+    return secret.trim();
+  }
+
   return (
     env.HTML_LINK_SIGNING_SECRET ||
     env.PUBLIC_HTML_LINK_SECRET ||
