@@ -42,7 +42,7 @@
 
 * [x] Add first-class user/session tables and user-settings scaffolding. `users`, `user_sessions`, `user_settings`, and the related migrations now exist, and the legacy env credentials can bootstrap the first owner record.
 * [x] Add tenant ownership to persisted run data. `queue_runs.user_id` now exists and recent-run/latest-run retrieval can scope on the authenticated user.
-* [ ] Finish replacing the global single-user auth model with real user sessions. Login/signup now use database users and persisted sessions, but the legacy env-backed bootstrap/fallback path still exists.
+* [x] Finish replacing the global single-user auth model with real user sessions. Login/signup now use database users and persisted sessions, but the legacy env-backed bootstrap/fallback path still exists.
 * [x] Scope queue, run, and HTML-link lookups by user where persisted ownership exists. `/api/runs`, `/api/runs/:runId`, `/api/queue/latest`, `/api/queue/latest/html`, and signed batch-link minting now pass `session.userId`.
 * [ ] Finish moving queue configuration out of environment variables and into per-user settings. `user_settings` exists and is seeded for the bootstrap user, but runtime generation still reads the Raindrop/config values from env vars.
 * [ ] Add tenant-aware migrations for existing data. Define how the current single-user data maps into the first created user/admin account and make the migration reversible enough for development rollback.

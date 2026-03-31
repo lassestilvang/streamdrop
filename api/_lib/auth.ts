@@ -19,11 +19,6 @@ const DEFAULT_USERNAME = "streamdrop";
 const DEFAULT_PASSWORD = "streamdrop";
 const DEFAULT_SECRET = "streamdrop-single-user-session";
 
-interface LegacySessionPayload {
-  username: string;
-  expiresAt: number;
-}
-
 interface AuthSettings {
   username: string;
   password: string;
@@ -86,22 +81,8 @@ export async function validateCredentials(
   const db = getDatabase();
 
   if (!db) {
-    const settings = getAuthSettings(env);
-
-    if (
-      safeEqual(normalizedUsername, normalizeUsername(settings.username)) &&
-      safeEqual(password, settings.password)
-    ) {
-      return {
-        userId: "legacy-single-user",
-        username: settings.username,
-      };
-    }
-
-    return null;
+    throw new AppError(500, "DATABASE_NOT_CONFIGURED", "DATABASE_URL is required for authentication.");
   }
-
-  await maybeBootstrapLegacyUser(env);
 
   const [user] = await db
     .select({
@@ -137,8 +118,6 @@ export async function createUser(
       "DATABASE_URL is required to create managed users.",
     );
   }
-
-  await maybeBootstrapLegacyUser(env);
 
   const normalizedUsername = normalizeUsername(username);
 
@@ -185,8 +164,8 @@ export async function createSessionCookie(
 ): Promise<string> {
   const db = getDatabase();
 
-  if (!db || session.userId === "legacy-single-user") {
-    return createLegacySessionCookie(session.username, env);
+  if (!db) {
+    throw new AppError(500, "DATABASE_NOT_CONFIGURED", "DATABASE_URL is required for sessions.");
   }
 
   const token = randomBytes(32).toString("base64url");
@@ -233,16 +212,7 @@ async function readSessionRecord(
   const db = getDatabase();
 
   if (!db) {
-    const payload = readLegacySessionPayload(request, env);
-
-    if (!payload) {
-      return null;
-    }
-
-    return {
-      userId: "legacy-single-user",
-      username: payload.username,
-    };
+    throw new AppError(500, "DATABASE_NOT_CONFIGURED", "DATABASE_URL is required to read sessions.");
   }
 
   const token = readCookie(request.headers.get("cookie"), SESSION_COOKIE);
@@ -270,110 +240,6 @@ async function readSessionRecord(
     userId: session.userId,
     username: session.username,
   };
-}
-
-function readLegacySessionPayload(
-  request: Request,
-  env: NodeJS.ProcessEnv,
-): LegacySessionPayload | null {
-  const token = readCookie(request.headers.get("cookie"), SESSION_COOKIE);
-
-  if (!token) {
-    return null;
-  }
-
-  const [encodedPayload, signature] = token.split(".");
-
-  if (!encodedPayload || !signature) {
-    return null;
-  }
-
-  const settings = getAuthSettings(env);
-
-  if (!safeEqual(signature, signValue(encodedPayload, settings.secret))) {
-    return null;
-  }
-
-  try {
-    const payload = JSON.parse(
-      Buffer.from(encodedPayload, "base64url").toString("utf8"),
-    ) as LegacySessionPayload;
-
-    if (
-      payload.username !== settings.username ||
-      !Number.isInteger(payload.expiresAt) ||
-      payload.expiresAt <= Date.now()
-    ) {
-      return null;
-    }
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function createLegacySessionCookie(
-  username: string,
-  env: NodeJS.ProcessEnv,
-): string {
-  const settings = getAuthSettings(env);
-  const payload: LegacySessionPayload = {
-    username,
-    expiresAt: Date.now() + SESSION_DURATION_SECONDS * 1000,
-  };
-  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = signValue(encodedPayload, settings.secret);
-  const secure = env.NODE_ENV === "production" ? "; Secure" : "";
-
-  return `${SESSION_COOKIE}=${encodedPayload}.${signature}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DURATION_SECONDS}${secure}`;
-}
-
-async function maybeBootstrapLegacyUser(env: NodeJS.ProcessEnv): Promise<void> {
-  const db = getDatabase();
-
-  if (!db) {
-    return;
-  }
-
-  const [existingUser] = await db
-    .select({
-      id: users.id,
-    })
-    .from(users)
-    .limit(1);
-
-  if (existingUser) {
-    return;
-  }
-
-  const settings = getAuthSettings(env);
-  const userId = randomUUID();
-
-  await db.transaction(async (tx) => {
-    await tx.insert(users).values({
-      id: userId,
-      username: normalizeUsername(settings.username),
-      passwordHash: hashPassword(settings.password),
-      role: "owner",
-    });
-
-    await tx.insert(userSettings).values({
-      userId,
-      collectionId: Number.parseInt(env.RAINDROP_COLLECTION_ID || "0", 10) || 0,
-      processedCollectionId: parseOptionalInteger(env.RAINDROP_PROCESSED_COLLECTION_ID),
-      search: env.RAINDROP_SEARCH || "",
-      sort: env.RAINDROP_SORT || "-created",
-      nested: readBooleanEnv(env.RAINDROP_NESTED, true),
-      maxArticles: Number.parseInt(env.MAX_ARTICLES || "20", 10) || 20,
-      maxMinutes: Number.parseInt(env.MAX_MINUTES || "45", 10) || 45,
-      wordsPerMinute: Number.parseInt(env.WORDS_PER_MINUTE || "180", 10) || 180,
-      extractionConcurrency: Number.parseInt(env.EXTRACTION_CONCURRENCY || "4", 10) || 4,
-      fetchTimeoutMs: Number.parseInt(env.FETCH_TIMEOUT_MS || "12000", 10) || 12000,
-      maxHtmlBytes: Number.parseInt(env.MAX_HTML_BYTES || "750000", 10) || 750000,
-      raindropToken: env.RAINDROP_TOKEN || null,
-    });
-  });
 }
 
 function getAuthSettings(env: NodeJS.ProcessEnv): AuthSettings {
