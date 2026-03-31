@@ -34,6 +34,8 @@ const ALLOWED_SORTS = new Set([
   "-domain",
 ]);
 
+const TAG_SEARCH_SHORTHAND_PATTERN = /(^|\s)(-?)tag:(?:"([^"\r\n]+)"|([^\s]+))/gi;
+
 export function resolveConfig(requestUrl: string, env: NodeJS.ProcessEnv = process.env): AppConfig {
   const url = new URL(requestUrl);
 
@@ -51,7 +53,7 @@ export function resolveConfig(requestUrl: string, env: NodeJS.ProcessEnv = proce
       env.RAINDROP_PROCESSED_COLLECTION_ID,
       "RAINDROP_PROCESSED_COLLECTION_ID",
     ),
-    search: readString(url.searchParams.get("search"), env.RAINDROP_SEARCH, DEFAULTS.search),
+    search: readSearch(url.searchParams.get("search"), env.RAINDROP_SEARCH, DEFAULTS.search),
     sort: readSort(url.searchParams.get("sort"), env.RAINDROP_SORT, DEFAULTS.sort),
     nested: readBoolean(url.searchParams.get("nested"), env.RAINDROP_NESTED, DEFAULTS.nested),
     maxArticles: readBoundedInteger(
@@ -169,6 +171,49 @@ function readString(
   }
 
   return fallback;
+}
+
+function readSearch(
+  requestValue: string | null,
+  envValue: string | undefined,
+  fallback: string,
+): string {
+  if (requestValue !== null) {
+    return validateSearch(requestValue.trim(), 400, "INVALID_QUERY", "search");
+  }
+
+  if (typeof envValue === "string") {
+    return validateSearch(envValue.trim(), 500, "CONFIG_INVALID", "RAINDROP_SEARCH");
+  }
+
+  return validateSearch(fallback, 500, "CONFIG_INVALID", "RAINDROP_SEARCH");
+}
+
+function validateSearch(
+  value: string,
+  status: number,
+  code: string,
+  field: string,
+): string {
+  if (!value) {
+    return "";
+  }
+
+  if (/[\u0000-\u001F\u007F]/.test(value)) {
+    throw new AppError(status, code, `${field} contains unsupported control characters.`);
+  }
+
+  const normalizedTagOperators = value.replace(TAG_SEARCH_SHORTHAND_PATTERN, "$1$2#tag");
+
+  if (/(^|\s)-?tag:/i.test(normalizedTagOperators)) {
+    throw new AppError(
+      status,
+      code,
+      `${field} contains an invalid tag filter. Use tag:name or tag:"multi word".`,
+    );
+  }
+
+  return value;
 }
 
 function readInteger(
