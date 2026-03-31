@@ -56,14 +56,15 @@ The service is split into small modules under `api/_lib`:
 
 Database modules:
 
-- `db/schema.ts`: Drizzle schema for persisted queue runs.
+- `db/schema.ts`: Drizzle schema for persisted queue runs, users, sessions, and user settings.
 - `db/client.ts`: shared Postgres/Drizzle client for runtime and migrations.
 - `drizzle/`: generated SQL migrations.
 
 Routes:
 
 - `index.html`: authenticated dashboard for queue control and inspection.
-- `api/session.js`: single-user login/session management.
+- `api/session.js`: authentication and session management. With a database, it authenticates against `users` and stores sessions in `user_sessions`; without one, it falls back to the legacy env-backed cookie flow.
+- `api/users.js`: account creation for database-backed users.
 - `api/generate.js`: main queue-generation endpoint.
 - `api/health.js`: health/configuration check for deployments.
 - `api/queue/latest/index.js`: latest stored successful queue for a configuration.
@@ -103,6 +104,7 @@ Available endpoints:
 - `GET /api/session`
 - `POST /api/session`
 - `DELETE /api/session`
+- `POST /api/users`
 - `GET /api/generate`
 - `GET /api/queue/latest`
 - `GET /api/queue/latest/html?batch=1`
@@ -146,9 +148,9 @@ Required:
 
 Optional:
 
-- `APP_USERNAME`: single-user dashboard username. Default `streamdrop`.
-- `APP_PASSWORD`: single-user dashboard password. Default `streamdrop`.
-- `SESSION_SECRET`: cookie-signing secret for the web UI session.
+- `APP_USERNAME`: bootstrap owner username used when the database-backed auth tables are first initialized. Also used by the legacy no-database auth fallback. Default `streamdrop`.
+- `APP_PASSWORD`: bootstrap owner password used when the database-backed auth tables are first initialized. Also used by the legacy no-database auth fallback. Default `streamdrop`.
+- `SESSION_SECRET`: signing secret for the legacy cookie fallback. It is also a fallback signing secret for public HTML links when `HTML_LINK_SIGNING_SECRET` is unset.
 - `HTML_LINK_SIGNING_SECRET`: server-only secret used to sign public batch HTML links.
 - `HTML_LINK_TTL_SECONDS`: expiry window for public batch HTML links. Default `2592000` (30 days).
 - `RAINDROP_COLLECTION_ID`: collection to read from. Default `0` for all collections except trash.
@@ -160,6 +162,12 @@ Optional:
 - `EXTRACTION_CONCURRENCY`: simultaneous article fetches. Default `4`.
 - `FETCH_TIMEOUT_MS`: timeout for upstream calls. Default `12000`.
 - `MAX_HTML_BYTES`: per-page HTML size cap before extraction. Default `750000`.
+
+Current auth/configuration state:
+
+- Database-backed users and sessions are live, and `POST /api/users` can create additional accounts.
+- When the database is empty, the first auth-related request bootstraps an owner from `APP_USERNAME` and `APP_PASSWORD` and seeds `user_settings` from the current Raindrop-related environment variables.
+- Queue generation still resolves Raindrop/configuration values from environment variables at runtime; the `user_settings` table exists, but per-user settings are not yet wired into generation.
 
 Request-level overrides are also supported via query string:
 
@@ -184,7 +192,8 @@ Supported query parameters:
 
 Open `/` to use the dashboard. It adds:
 
-- Single-user authentication backed by a signed session cookie.
+- Login plus account creation from the same auth form.
+- Database-backed sessions when Postgres is configured, with a legacy signed-cookie fallback when it is not.
 - Queue generation from the browser using the existing queued-run lifecycle.
 - Stored latest-queue retrieval for the current configuration.
 - Batch preview, copy-to-clipboard, and direct HTML opening.
@@ -193,7 +202,9 @@ Open `/` to use the dashboard. It adds:
 - Recent run history and operator stats such as extraction rate, success streak, and skip pressure.
 - History actions to load a stored run, rerun a saved configuration, compare runs, and inspect move/skip diagnostics.
 
-If you do not override the auth settings, the default login is:
+The dashboard auth flow is ahead of the per-user settings work: sessions are user-backed, but queue settings still come from environment variables.
+
+If you do not override the auth settings, the bootstrap owner and legacy fallback login is:
 
 - Username: `streamdrop`
 - Password: `streamdrop`
@@ -252,10 +263,10 @@ Synchronous generation:
 
 Retrieval:
 
-- `GET /api/queue/latest` returns the latest successful stored run for the requested configuration.
+- `GET /api/queue/latest` returns the latest successful stored run for the requested configuration and authenticated user.
 - `GET /api/queue/latest/html?batch=1` returns stored HTML for a batch from that latest run.
-- `GET /api/runs?limit=12` returns recent persisted run summaries for dashboard/history views.
-- `GET /api/runs/:runId` returns the persisted lifecycle state for a specific run.
+- `GET /api/runs?limit=12` returns recent persisted run summaries for the authenticated user.
+- `GET /api/runs/:runId` returns the persisted lifecycle state for a specific run owned by the authenticated user.
 - `GET /api/runs/:runId/html-link?batch=1` returns a signed public URL for a specific successful run batch.
 - `GET /api/runs/:runId/html?batch=1` returns stored HTML for a specific successful run.
 
@@ -277,5 +288,5 @@ Current limitation:
 - Whole-run failures are persisted to Postgres with status and structured error details.
 - Successful runs are persisted to Postgres with per-batch, per-article, and skip metadata for later retrieval.
 - `/api/health` reports whether configuration is valid without exposing secrets.
-- Queue, run, and health endpoints require the single-user session gate exposed by `/api/session`.
+- Queue, run, and health endpoints require an authenticated session from `/api/session`, and persisted run lookups are scoped by `session.userId` when available.
 - Batch HTML can also be accessed through time-limited signed URLs minted by `/api/runs/:runId/html-link`.
