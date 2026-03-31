@@ -3,6 +3,7 @@ import type { AppConfig, PublicConfig } from "./types.js";
 
 const DEFAULTS = {
   collectionId: 0,
+  includeSummaries: false,
   search: "",
   sort: "-created",
   nested: true,
@@ -52,6 +53,12 @@ export function resolveConfig(requestUrl: string, env: NodeJS.ProcessEnv = proce
     processedCollectionId: readOptionalPositiveInteger(
       env.RAINDROP_PROCESSED_COLLECTION_ID,
       "RAINDROP_PROCESSED_COLLECTION_ID",
+    ),
+    includeSummaries: readBoolean(
+      url.searchParams.get("summaries"),
+      env.SUMMARIES_ENABLED,
+      DEFAULTS.includeSummaries,
+      "summaries",
     ),
     search: readSearch(url.searchParams.get("search"), env.RAINDROP_SEARCH, DEFAULTS.search),
     sort: readSort(url.searchParams.get("sort"), env.RAINDROP_SORT, DEFAULTS.sort),
@@ -126,6 +133,7 @@ export function restoreConfig(
 export function getPublicConfig(config: AppConfig): PublicConfig {
   return {
     collectionId: config.collectionId,
+    includeSummaries: config.includeSummaries,
     search: config.search,
     sort: config.sort,
     nested: config.nested,
@@ -275,6 +283,7 @@ function readBoolean(
   requestValue: string | null,
   envValue: string | undefined,
   fallback: boolean,
+  field = "nested",
 ): boolean {
   const value = requestValue ?? envValue;
 
@@ -296,7 +305,7 @@ function readBoolean(
     return false;
   }
 
-  throw new AppError(400, "INVALID_QUERY", "nested must be true or false.");
+  throw new AppError(400, "INVALID_QUERY", `${field} must be true or false.`);
 }
 
 function readSort(
